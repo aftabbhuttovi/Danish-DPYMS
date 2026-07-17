@@ -1,0 +1,17 @@
+/* Global resets for DPYMS */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #F4F7FC; /* C.paleBg matching the original app */
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* Ensure inputs and buttons inherit the font family if not explicitly set */
+input, select, button, textarea {
+  font-family: inherit;
+}
