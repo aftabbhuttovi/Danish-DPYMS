@@ -4,10 +4,11 @@ const { useState, useEffect, useMemo } = React;
    DANISH HEALTH CARE (P) LTD. — DPYMS v2
    Digital Production Yield Management System
    Departments: Tablets, Capsules, ORS (sachets), Ointment (tubes)
-   Roles: Production, Packaging/QA, Manager — each department-gated by password
+   Roles: Production, Quality Assurance (QA), Packaging, Manager
+   Passwords: production123, qa123, packaging123, manager123
 ============================================================================ */
 
-// ---------- palette (from plant signage) ----------
+// ---------- palette (from plant signage & GMP branding) ----------
 const C = {
   navy: "#0E2A5E", navy2: "#153E82", blue: "#2F6FE0", skyBlue: "#5FA8E0",
   paleBg: "#F4F7FC", panelBg: "#FFFFFF", ink: "#101826", sub: "#5B6B7F",
@@ -57,25 +58,31 @@ async function hashPassword(pwd) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Plaintext department passwords as requested: <department>123
+const ROLE_PASSWORDS = {
+  production: 'production123',
+  qa: 'qa123',
+  packaging: 'packaging123',
+  manager: 'manager123'
+};
+
 const ROLE_HASHES = {
   production: '97f08b12c985e818cb86cd3d6f7c4dec65a586d95874ce54db426d20d383ab2a',
+  qa: 'c1b474e2d4e78873f848037146522c069b14798b0451cfbf5894101e4a193631',
   packaging: 'e97af628deabddcc642d00c9b0fa3c488e54fe9bbe557975e5f45e5c9f04ea82',
   manager: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'
 };
 
-// ---------- department config ----------
-// Tablets & Capsules use the kg -> Lakh Tabs model (Gran/Comp/Coat).
-// ORS uses sachets with manually typed gram weight per sachet.
-// Ointment uses tubes with manually typed gram weight per tube.
+// ---------- Department Config with Authentic Product Assets ----------
 const DEPARTMENTS = {
-  tablet:   { key: "tablet",   label: "Tablets",   unit: "Lakh Tabs", icon: "💊", stages: ["gran", "comp", "coat"] },
-  capsule:  { key: "capsule",  label: "Capsules",  unit: "Lakh Caps", icon: "⬤", stages: ["gran", "comp", "coat"] },
-  ors:      { key: "ors",      label: "ORS",       unit: "Lakh Sachets", icon: "🥤", stages: ["mix", "fill"] },
-  ointment: { key: "ointment", label: "Ointment",  unit: "Lakh Tubes", icon: "🧴", stages: ["mix", "fill"] },
+  tablet:   { key: "tablet",   label: "Tablets",   unit: "Lakh Tabs", icon: "💊", imgSrc: "assets/tablet_product.jpg", stages: ["gran", "comp", "coat"] },
+  capsule:  { key: "capsule",  label: "Capsules",  unit: "Lakh Caps", icon: "⬤", imgSrc: "assets/capsule_product.jpg", stages: ["gran", "comp"] },
+  ors:      { key: "ors",      label: "ORS",       unit: "Lakh Sachets", icon: "🥤", imgSrc: "assets/ors_product.jpg", stages: ["mix", "fill"] },
+  ointment: { key: "ointment", label: "Ointment",  unit: "Lakh Tubes", icon: "🧴", imgSrc: "assets/ointment_product.jpg", stages: ["mix", "fill"] },
 };
 const DEPT_LIST = Object.values(DEPARTMENTS);
 
-// ---------- storage helpers (shared across all users of this artifact) ----------
+// ---------- Storage Helpers ----------
 async function loadShared(key, fallback) {
   if (key === "dpyms_selftest") return fallback;
   try {
@@ -108,8 +115,8 @@ async function saveShared(key, value, attempt = 1) {
   }
 }
 
-// ---------- number helpers ----------
-const round2 = (n) => (isFinite(n) ? Math.round(n * 100) / 100 : "");
+// ---------- Number & Yield Calculation Helpers ----------
+const round2 = (n) => (isFinite(n) && n !== "" && n !== null ? Math.round(n * 100) / 100 : "");
 function lakhUnitsFromKg(kg, avgWtMg) {
   if (!kg || !avgWtMg) return "";
   return round2((kg * 1000000) / avgWtMg / 100000);
@@ -123,34 +130,55 @@ function lakhFromUnits(units) {
   if (!units && units !== 0) return "";
   return round2(units / 100000);
 }
-// ORS/Ointment: quantity is manually counted (sachets/tubes), weight per unit is
-// manually typed in grams. Lakh units = qty / 100000. Total kg = qty * gramWt / 1000.
 function totalKgFromUnitsAndGrams(qty, gramsPerUnit) {
   const q = parseFloat(qty), g = parseFloat(gramsPerUnit);
   if (!isFinite(q) || !isFinite(g)) return "";
   return round2((q * g) / 1000);
 }
 
-// ---------- calculations: Tablet/Capsule Mother Batch (kg-based) ----------
-function computeMB_TabletCapsule(mbRaw, commercialBatches) {
+// ---------- Tablet Mother Batch Calculations ----------
+function computeMB_Tablet(mbRaw, commercialBatches) {
   const wt = parseFloat(mbRaw.avgUnitWt);
-  const batchWt = parseFloat(mbRaw.plannedBatchWt);
+  const plannedLakhInput = parseFloat(mbRaw.plannedLakhUnits);
+  let batchWt = parseFloat(mbRaw.plannedBatchWt);
+  
+  if (isFinite(plannedLakhInput) && wt && !batchWt) {
+    batchWt = (plannedLakhInput * 100000 * wt) / 1000000;
+  }
   const rr = parseFloat(mbRaw.rrGran) || 0;
-  const totalBatch = isFinite(batchWt) ? batchWt + rr : "";
-  const plannedLakh = totalBatch !== "" ? lakhUnitsFromKg(totalBatch, wt) : "";
+  const totalBatchKg = isFinite(batchWt) ? batchWt + rr : "";
+  const plannedLakh = isFinite(plannedLakhInput) ? plannedLakhInput : (totalBatchKg !== "" ? lakhUnitsFromKg(totalBatchKg, wt) : "");
 
   const gran = parseFloat(mbRaw.granOutput);
   const granLakh = isFinite(gran) ? lakhUnitsFromKg(gran, wt) : "";
-  const granYield = isFinite(gran) && totalBatch !== "" ? pct(gran, totalBatch) : "";
+  const granYield = isFinite(gran) && totalBatchKg !== "" ? pct(gran, totalBatchKg) : "";
+  const granLossKg = totalBatchKg !== "" && isFinite(gran) ? round2(totalBatchKg - gran) : "";
+  const granLossLakh = granLossKg !== "" ? lakhUnitsFromKg(granLossKg, wt) : "";
 
   const comp = parseFloat(mbRaw.compOutput);
   const compLakh = isFinite(comp) ? lakhUnitsFromKg(comp, wt) : "";
   const compYield = isFinite(comp) && isFinite(gran) ? pct(comp, gran) : "";
+  const compLossKg = isFinite(gran) && isFinite(comp) ? round2(gran - comp) : "";
+  const compLossLakh = compLossKg !== "" ? lakhUnitsFromKg(compLossKg, wt) : "";
 
+  // Coating Details
   const coated = mbRaw.coated === "Y";
+  const coreWt = parseFloat(mbRaw.coreAvgWt) || wt;
+  const coatGainPct = parseFloat(mbRaw.coatWtGainPct) || 0;
+  const expectedCoatedWt = isFinite(coreWt) ? round2(coreWt * (1 + coatGainPct / 100)) : "";
+  const actualCoatedWt = parseFloat(mbRaw.actualCoatedWt) || expectedCoatedWt;
+  const coatWtVariation = isFinite(actualCoatedWt) && isFinite(expectedCoatedWt) && expectedCoatedWt > 0
+    ? round2(((actualCoatedWt - expectedCoatedWt) / expectedCoatedWt) * 100)
+    : "";
+
   const coat = parseFloat(mbRaw.coatOutput);
-  const coatLakh = coated && isFinite(coat) ? lakhUnitsFromKg(coat, wt) : "";
+  const effectiveCoatedUnitWt = actualCoatedWt || wt;
+  const coatLakh = coated && isFinite(coat) ? lakhUnitsFromKg(coat, effectiveCoatedUnitWt) : "";
   const coatYield = !coated ? "NA" : isFinite(coat) && isFinite(comp) ? pct(coat, comp) : "";
+  const coatMatConsumed = parseFloat(mbRaw.coatMatConsumed) || 0;
+  const coatMatLoss = coated && isFinite(coat) && isFinite(comp)
+    ? round2(coatMatConsumed - (coat - comp))
+    : "";
 
   const linked = commercialBatches.filter((cb) => cb.mbId === mbRaw.id);
   const allocatedLakh = round2(
@@ -176,23 +204,83 @@ function computeMB_TabletCapsule(mbRaw, commercialBatches) {
   }
 
   return {
-    totalBatch, plannedLakh,
-    gran, granLakh, granYield,
-    comp, compLakh, compYield,
-    coat: coated ? coat : "NA", coatLakh: coated ? coatLakh : "NA", coatYield,
+    totalBatchKg, plannedLakh,
+    gran, granLakh, granYield, granLossKg, granLossLakh,
+    comp, compLakh, compYield, compLossKg, compLossLakh,
+    coated, coreWt, coatGainPct, expectedCoatedWt, actualCoatedWt, coatWtVariation,
+    coat: coated ? coat : "NA", coatLakh: coated ? coatLakh : "NA", coatYield, coatMatConsumed, coatMatLoss,
     allocatedLakh, packedLakhTotal, dispatchLakhTotal, unallocated, status,
     linkedCount: linked.length,
+    qaStatus: mbRaw.qaStatus || "Pending",
   };
 }
 
-// ---------- calculations: ORS/Ointment Mother Batch (manual unit-count based) ----------
-// Planned quantity + weight-per-unit typed manually; Mix/Fill are the two stages.
+// ---------- Capsule Mother Batch Calculations ----------
+function computeMB_Capsule(mbRaw, commercialBatches) {
+  const fillWt = parseFloat(mbRaw.fillWtMg);
+  const shellWt = parseFloat(mbRaw.shellWtMg);
+  const avgFilledCapWt = isFinite(fillWt) && isFinite(shellWt) ? round2(fillWt + shellWt) : parseFloat(mbRaw.avgUnitWt);
+  const plannedLakhInput = parseFloat(mbRaw.plannedLakhUnits);
+  let batchWt = parseFloat(mbRaw.plannedBatchWt);
+
+  if (isFinite(plannedLakhInput) && fillWt && !batchWt) {
+    batchWt = (plannedLakhInput * 100000 * fillWt) / 1000000;
+  }
+  const totalBatchKg = isFinite(batchWt) ? batchWt : "";
+  const plannedLakh = isFinite(plannedLakhInput) ? plannedLakhInput : (totalBatchKg !== "" && fillWt ? lakhUnitsFromKg(totalBatchKg, fillWt) : "");
+
+  const requiredFillKg = plannedLakh !== "" && fillWt ? round2((plannedLakh * 100000 * fillWt) / 1000000) : "";
+  const requiredShellQty = plannedLakh !== "" ? plannedLakh * 100000 : "";
+
+  const gran = parseFloat(mbRaw.granOutput);
+  const granLakh = isFinite(gran) && fillWt ? lakhUnitsFromKg(gran, fillWt) : "";
+  const granYield = isFinite(gran) && totalBatchKg !== "" ? pct(gran, totalBatchKg) : "";
+
+  const comp = parseFloat(mbRaw.compOutput);
+  const compLakh = isFinite(comp) && avgFilledCapWt ? lakhUnitsFromKg(comp, avgFilledCapWt) : "";
+  const compYield = isFinite(comp) && isFinite(gran) ? pct(comp, gran) : "";
+
+  const linked = commercialBatches.filter((cb) => cb.mbId === mbRaw.id);
+  const allocatedLakh = round2(
+    linked.reduce((sum, cb) => {
+      const kg = parseFloat(cb.allocatedKg);
+      const g = isFinite(kg) && avgFilledCapWt ? lakhUnitsFromKg(kg, avgFilledCapWt) : "";
+      return sum + (typeof g === "number" ? g : 0);
+    }, 0)
+  );
+  const packedLakhTotal = round2(
+    linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.packedQty)) ? parseFloat(cb.packedQty) / 100000 : 0), 0)
+  );
+  const dispatchLakhTotal = round2(
+    linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.dispatchQty)) ? parseFloat(cb.dispatchQty) / 100000 : 0), 0)
+  );
+
+  const unallocated = plannedLakh !== "" ? round2(plannedLakh - allocatedLakh) : "";
+  let status = "";
+  if (plannedLakh !== "") {
+    if (unallocated === 0) status = "Fully Allocated";
+    else if (unallocated > 0) status = "Under-allocated";
+    else status = "OVER-ALLOCATED!";
+  }
+
+  return {
+    fillWt, shellWt, avgFilledCapWt, requiredFillKg, requiredShellQty,
+    totalBatchKg, plannedLakh,
+    gran, granLakh, granYield,
+    comp, compLakh, compYield,
+    allocatedLakh, packedLakhTotal, dispatchLakhTotal, unallocated, status,
+    linkedCount: linked.length,
+    qaStatus: mbRaw.qaStatus || "Pending",
+  };
+}
+
+// ---------- ORS/Ointment Mother Batch Calculations ----------
 function computeMB_OrsOintment(mbRaw, commercialBatches) {
-  const plannedQty = parseFloat(mbRaw.plannedQty); // sachets or tubes
+  const plannedQty = parseFloat(mbRaw.plannedQty);
   const plannedLakh = isFinite(plannedQty) ? lakhFromUnits(plannedQty) : "";
 
   const mixOutputKg = parseFloat(mbRaw.mixOutputKg);
-  const fillQty = parseFloat(mbRaw.fillOutputQty); // sachets/tubes actually filled
+  const fillQty = parseFloat(mbRaw.fillOutputQty);
   const fillLakh = isFinite(fillQty) ? lakhFromUnits(fillQty) : "";
   const fillYield = isFinite(fillQty) && plannedQty ? pct(fillQty, plannedQty) : "";
 
@@ -220,46 +308,51 @@ function computeMB_OrsOintment(mbRaw, commercialBatches) {
     fillQty, fillLakh, fillYield,
     allocatedLakh, packedLakhTotal, dispatchLakhTotal, unallocated, status,
     linkedCount: linked.length,
+    qaStatus: mbRaw.qaStatus || "Pending",
   };
 }
 
 function computeMB(mbRaw, commercialBatches) {
-  if (mbRaw.dept === "ors" || mbRaw.dept === "ointment") {
-    return computeMB_OrsOintment(mbRaw, commercialBatches);
-  }
-  return computeMB_TabletCapsule(mbRaw, commercialBatches);
+  if (mbRaw.dept === "capsule") return computeMB_Capsule(mbRaw, commercialBatches);
+  if (mbRaw.dept === "ors" || mbRaw.dept === "ointment") return computeMB_OrsOintment(mbRaw, commercialBatches);
+  return computeMB_Tablet(mbRaw, commercialBatches);
 }
 
-// ---------- calculations: Commercial Batch ----------
+// ---------- Commercial Batch Calculations & Packaging Yield ----------
 function computeCB(cbRaw, motherBatches) {
   const mb = motherBatches.find((m) => m.id === cbRaw.mbId);
   const dept = mb ? mb.dept : cbRaw.dept;
 
+  const unitsRecv = parseFloat(cbRaw.unitsReceived || cbRaw.allocatedQty) || 0;
+  const packed = parseFloat(cbRaw.packedQty) || 0;
+  const dispatch = parseFloat(cbRaw.dispatchQty) || 0;
+  const rejected = parseFloat(cbRaw.rejectedUnits) || 0;
+  const damaged = parseFloat(cbRaw.damagedUnits) || 0;
+  const totalLossUnits = rejected + damaged;
+  const balanceUnits = Math.max(0, unitsRecv - (packed + totalLossUnits));
+
+  const pkgYield = unitsRecv > 0 ? pct(packed, unitsRecv) : "";
+  const dispatchYield = packed > 0 ? pct(dispatch, packed) : "";
+
   if (dept === "ors" || dept === "ointment") {
     const allocQty = parseFloat(cbRaw.allocatedQty);
     const allocLakh = isFinite(allocQty) ? lakhFromUnits(allocQty) : "";
-    const packed = parseFloat(cbRaw.packedQty);
     const packedLakh = isFinite(packed) ? lakhFromUnits(packed) : "";
-    const dispatch = parseFloat(cbRaw.dispatchQty);
     const dispatchLakh = isFinite(dispatch) ? lakhFromUnits(dispatch) : "";
-    const finalYield = typeof allocLakh === "number" && isFinite(dispatch) ? pct(dispatchLakh, allocLakh) : "";
     const gramWt = parseFloat(cbRaw.gramWtPerUnit);
     const totalKg = isFinite(packed) && isFinite(gramWt) ? totalKgFromUnitsAndGrams(packed, gramWt) : "";
-    return { mb, allocLakh, packed, packedLakh, dispatch, dispatchLakh, finalYield, totalKg };
+    return { mb, allocLakh, packed, packedLakh, dispatch, dispatchLakh, rejected, damaged, totalLossUnits, balanceUnits, pkgYield, dispatchYield, finalYield: dispatchYield, totalKg };
   }
 
   const avgWt = mb ? parseFloat(mb.avgUnitWt) : NaN;
   const kg = parseFloat(cbRaw.allocatedKg);
   const allocLakh = isFinite(kg) && isFinite(avgWt) ? lakhUnitsFromKg(kg, avgWt) : "";
-  const packed = parseFloat(cbRaw.packedQty);
   const packedLakh = isFinite(packed) ? lakhFromUnits(packed) : "";
-  const dispatch = parseFloat(cbRaw.dispatchQty);
   const dispatchLakh = isFinite(dispatch) ? lakhFromUnits(dispatch) : "";
-  const finalYield = typeof allocLakh === "number" && isFinite(dispatch) ? pct(dispatchLakh, allocLakh) : "";
-  return { mb, avgWt, allocLakh, packed, packedLakh, dispatch, dispatchLakh, finalYield };
+  return { mb, avgWt, allocLakh, packed, packedLakh, dispatch, dispatchLakh, rejected, damaged, totalLossUnits, balanceUnits, pkgYield, dispatchYield, finalYield: dispatchYield };
 }
 
-// ---------- id + sort helpers ----------
+// ---------- ID & Sort Helpers ----------
 const DEPT_PREFIX = { tablet: "TB", capsule: "CP", ors: "OR", ointment: "OT" };
 const genMBId = (existing, dept) => {
   const prefix = "MB-" + DEPT_PREFIX[dept];
@@ -296,7 +389,6 @@ function fmtNum(n) {
   return Number(n).toLocaleString("en-IN");
 }
 
-// ---------- CSV export (Excel-compatible) ----------
 function toCSV(rows, headers) {
   const esc = (v) => {
     if (v === null || v === undefined) return "";
@@ -324,60 +416,41 @@ function downloadCSV(filename, csvContent) {
   URL.revokeObjectURL(url);
 }
 
-function LogoMark({ size = 40, light = false }) {
-  const nodeColor = light ? "#DCEBFF" : C.skyBlue;
-  const nodeDark = light ? "#FFFFFF" : C.navy2;
-  return (
-    <svg width={size} height={size} viewBox="0 0 60 60" fill="none">
-      <line x1="14" y1="10" x2="24" y2="20" stroke={nodeColor} strokeWidth="2.5" />
-      <line x1="24" y1="20" x2="18" y2="32" stroke={nodeColor} strokeWidth="2.5" />
-      <line x1="18" y1="32" x2="28" y2="42" stroke={nodeColor} strokeWidth="2.5" />
-      <line x1="28" y1="42" x2="24" y2="54" stroke={nodeColor} strokeWidth="2.5" />
-      <line x1="18" y1="32" x2="8" y2="38" stroke={nodeColor} strokeWidth="2.5" />
-      <circle cx="14" cy="10" r="6" fill={nodeColor} />
-      <circle cx="24" cy="20" r="4.5" fill={nodeDark} />
-      <circle cx="18" cy="32" r="5.5" fill={nodeColor} />
-      <circle cx="28" cy="42" r="4" fill={nodeDark} />
-      <circle cx="24" cy="54" r="5" fill={nodeColor} />
-      <circle cx="8" cy="38" r="4" fill={nodeDark} />
-    </svg>
-  );
-}
-
+// ---------- Header with Official Branding ----------
 function BrandHeader({ small }) {
   return (
-    <div style={{ textAlign: "center", marginBottom: small ? 24 : 40 }}>
-      <div
-        style={{
-          width: small ? 54 : 72, height: small ? 54 : 72, borderRadius: "50%",
-          background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.25)",
-          margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
-        <LogoMark size={small ? 30 : 40} light />
-      </div>
-      <h1 style={{ color: C.white, fontFamily: FONT_DISPLAY, fontSize: small ? 21 : 26, fontWeight: 700, margin: 0, letterSpacing: 0.3 }}>
-        danish<span style={{ fontWeight: 400 }}>healthcare</span>
-      </h1>
-      <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, marginTop: 4, fontStyle: "italic" }}>
-        hope. health. life...
-      </div>
-      <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, letterSpacing: 1.5, marginTop: 14, textTransform: "uppercase" }}>
+    <div style={{ textAlign: "center", marginBottom: small ? 20 : 32 }}>
+      <img src="assets/danish_logo.jpg" alt="Danish Healthcare Logo" className="brand-header-logo" style={{ marginBottom: 12 }} />
+      <div style={{ color: "rgba(255,255,255,0.9)", fontSize: 12.5, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700 }}>
         DANISH HEALTH CARE (P) LTD. · UJJAIN
       </div>
-      <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, marginTop: 8 }}>
-        Digital Production Yield Management System
+      <div style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, marginTop: 4 }}>
+        Digital Production Yield Management System (DPYMS v2)
       </div>
     </div>
   );
 }
 
-// ---------- ROLE PICKER (step 1) ----------
+// ---------- Universal Action Bar ----------
+function UniversalActionBar({ onSave, onEdit, onUpdate, onBack, onNext, isEditing = false }) {
+  return (
+    <div className="nav-action-bar no-print">
+      {onBack && <button type="button" className="btn-nav btn-back" onClick={onBack}>← Back</button>}
+      {!isEditing && onSave && <button type="button" className="btn-nav btn-save" onClick={onSave}>💾 Save</button>}
+      {!isEditing && onEdit && <button type="button" className="btn-nav btn-edit" onClick={onEdit}>✏️ Edit</button>}
+      {isEditing && onUpdate && <button type="button" className="btn-nav btn-update" onClick={onUpdate}>🔄 Update Record</button>}
+      {onNext && <button type="button" className="btn-nav btn-next" onClick={onNext}>Next →</button>}
+    </div>
+  );
+}
+
+// ---------- ROLE PICKER with Requested Passwords (departmentname123) ----------
 function RolePicker({ onPick, storageWarning }) {
   const roles = [
-    { key: "production", label: "Production", desc: "Log Mother Batches — all departments", icon: "⚗" },
-    { key: "packaging", label: "Packaging / QA", desc: "Log Commercial Batches — Packing, Dispatch, Yield", icon: "📦" },
-    { key: "manager", label: "Manager Dashboard", desc: "Full plant view — every stage, every batch, live", icon: "◈" },
+    { key: "production", label: "Production", desc: "Log & Edit Mother Batches — Granulation, Compression, Coating", icon: "⚗", pwdHint: "production123" },
+    { key: "qa", label: "Quality Assurance (QA)", desc: "Inspection, Assay, QC Approvals & Status Updates", icon: "🔬", pwdHint: "qa123" },
+    { key: "packaging", label: "Packaging", desc: "Commercial Batches — Packing, Rejections, Dispatch & Yields", icon: "📦", pwdHint: "packaging123" },
+    { key: "manager", label: "Manager Dashboard", desc: "Full plant view — stage tracking, plant register & GMP reports", icon: "◈", pwdHint: "manager123" },
   ];
   
   const [selectedRole, setSelectedRole] = useState(null);
@@ -386,36 +459,41 @@ function RolePicker({ onPick, storageWarning }) {
 
   const handlePick = async (e) => {
     e.preventDefault();
+    const inputPwd = password.trim().toLowerCase();
+    const expectedPwd = ROLE_PASSWORDS[selectedRole];
     const hash = await hashPassword(password);
-    if (hash === ROLE_HASHES[selectedRole]) {
+
+    if (inputPwd === expectedPwd || hash === ROLE_HASHES[selectedRole]) {
       onPick(selectedRole);
     } else {
-      setErrorMsg("Incorrect password. Please try again.");
+      setErrorMsg(`Incorrect password. Password format is: ${selectedRole}123`);
     }
   };
 
   if (selectedRole) {
+    const roleObj = roles.find(r => r.key === selectedRole);
     return (
       <div style={{ minHeight: "100vh", background: `linear-gradient(160deg, ${C.navy} 0%, ${C.navy2} 55%, ${C.blue} 100%)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", fontFamily: FONT_BODY }}>
         <BrandHeader />
-        <Card style={{ padding: 24, width: "100%", maxWidth: 360, textAlign: "center" }}>
-          <h2 style={{ margin: "0 0 16px 0", fontSize: 18, color: C.navy, fontFamily: FONT_DISPLAY }}>Enter Password</h2>
+        <Card style={{ padding: 24, width: "100%", maxWidth: 380, textAlign: "center" }}>
+          <h2 style={{ margin: "0 0 8px 0", fontSize: 18, color: C.navy, fontFamily: FONT_DISPLAY }}>Department Password Login</h2>
           <p style={{ margin: "0 0 16px 0", fontSize: 13, color: C.sub }}>
-            Role: <strong>{roles.find(r => r.key === selectedRole).label}</strong>
+            Role: <strong>{roleObj.label}</strong>
           </p>
           <form onSubmit={handlePick}>
             <input 
               type="password" 
               value={password} 
               onChange={e => setPassword(e.target.value)}
-              placeholder="Password"
-              style={{ width: "100%", padding: "12px", borderRadius: 8, border: `1px solid ${C.line}`, marginBottom: 12, fontSize: 16 }}
+              placeholder={`Password (e.g. ${roleObj.pwdHint})`}
+              style={{ width: "100%", padding: "12px", borderRadius: 8, border: `1px solid ${C.line}`, marginBottom: 10, fontSize: 15 }}
               autoFocus
             />
+            <div style={{ fontSize: 11, color: C.sub, marginBottom: 14 }}>Default Password: <b>{roleObj.pwdHint}</b></div>
             {errorMsg && <div style={{ color: C.bad, fontSize: 12, marginBottom: 12 }}>{errorMsg}</div>}
             <div style={{ display: "flex", gap: 10 }}>
               <button type="button" onClick={() => { setSelectedRole(null); setErrorMsg(""); setPassword(""); }} style={{ flex: 1, padding: "12px", borderRadius: 8, background: C.white, border: `1px solid ${C.line}`, color: C.sub, cursor: "pointer", fontWeight: "bold" }}>Back</button>
-              <button type="submit" style={{ flex: 1, padding: "12px", borderRadius: 8, background: C.navy, color: C.white, border: "none", cursor: "pointer", fontWeight: "bold" }}>Login</button>
+              <button type="submit" style={{ flex: 1, padding: "12px", borderRadius: 8, background: C.navy, color: C.white, border: "none", cursor: "pointer", fontWeight: "bold" }}>Login →</button>
             </div>
           </form>
         </Card>
@@ -428,55 +506,58 @@ function RolePicker({ onPick, storageWarning }) {
       <BrandHeader />
       {storageWarning && (
         <div style={{ background: "rgba(176,0,32,0.15)", border: "1px solid rgba(176,0,32,0.4)", color: "#FFD6D6", borderRadius: 10, padding: "12px 16px", fontSize: 12.5, maxWidth: 420, marginBottom: 22, textAlign: "center" }}>
-          ⚠ Shared storage isn't responding this session. Data you enter will stay visible on your own screen but may not sync to other devices or survive a refresh. Use the Manager's <b>Export</b> button often to keep a backup.
+          ⚠ Storage Notice: Shared cloud storage disconnected. Local session storage active.
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 420 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 440 }}>
         {roles.map((r) => (
           <button key={r.key} onClick={() => setSelectedRole(r.key)} style={{ background: C.white, border: "none", borderRadius: 14, padding: "18px 20px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left", boxShadow: "0 4px 18px rgba(0,0,0,0.25)" }}>
             <div style={{ width: 46, height: 46, minWidth: 46, borderRadius: 10, background: C.paleBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{r.icon}</div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 16, color: C.ink }}>{r.label}</div>
               <div style={{ fontSize: 12.5, color: C.sub, marginTop: 2 }}>{r.desc}</div>
+              <div style={{ fontSize: 11, color: C.blue, marginTop: 4, fontWeight: 600 }}>Password: {r.pwdHint}</div>
             </div>
           </button>
         ))}
       </div>
-      <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, marginTop: 36 }}>Pick your department role to continue</div>
+      <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, marginTop: 36 }}>Pick your department role to log in</div>
     </div>
   );
 }
 
-// ---------- DEPARTMENT PICKER (for Production & Packaging) ----------
+// ---------- DEPARTMENT PICKER (Authentic Indian Pharma Product Assets) ----------
 function DepartmentPicker({ onPick, onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: C.paleBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", fontFamily: FONT_BODY }}>
+      <img src="assets/danish_logo.jpg" alt="Danish Healthcare" style={{ height: 48, marginBottom: 20 }} />
       <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: C.navy }}>Select Product Type</div>
-        <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>Choose which formulation you're logging today</div>
+        <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: C.navy }}>Select Product Line</div>
+        <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>Choose manufacturing section for yield logging</div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, width: "100%", maxWidth: 420 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", maxWidth: 460 }}>
         {DEPT_LIST.map((d) => (
-          <button key={d.key} onClick={() => onPick(d.key)} style={{ background: C.white, border: `1px solid ${C.line}`, borderRadius: 14, padding: "22px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 1px 3px rgba(14,42,94,0.06)" }}>
-            <div style={{ fontSize: 30, marginBottom: 8 }}>{d.icon}</div>
-            <div style={{ fontWeight: 700, fontSize: 14.5, color: C.ink }}>{d.label}</div>
+          <button key={d.key} onClick={() => onPick(d.key)} style={{ background: C.white, border: `1.5px solid ${C.line}`, borderRadius: 16, padding: "20px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 2px 8px rgba(14,42,94,0.06)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <img src={d.imgSrc} alt={d.label} className="product-card-img" style={{ width: 72, height: 72 }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: C.ink }}>{d.label}</div>
+              <div style={{ fontSize: 11.5, color: C.sub, marginTop: 2 }}>{d.unit}</div>
+            </div>
           </button>
         ))}
       </div>
-      <button onClick={onBack} style={{ background: "none", border: "none", color: C.sub, fontSize: 12.5, marginTop: 28, cursor: "pointer" }}>← Back</button>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: C.sub, fontSize: 12.5, marginTop: 28, cursor: "pointer", fontWeight: 600 }}>← Back to Roles</button>
     </div>
   );
 }
 
 function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, showDeptChange, onOpenRegister, showRegisterLink }) {
   return (
-    <div style={{ background: C.navy, color: C.white, padding: "12px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", flexWrap: "wrap", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <LogoMark size={20} light />
-        </div>
+    <div style={{ background: C.navy, color: C.white, padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", flexWrap: "wrap", gap: 8 }} className="no-print">
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <img src="assets/danish_logo.jpg" alt="Logo" style={{ height: 32, filter: "brightness(0) invert(1)" }} />
         <div>
-          <div style={{ fontWeight: 700, fontSize: 13.5, fontFamily: FONT_DISPLAY }}>danishhealthcare · DPYMS</div>
+          <div style={{ fontWeight: 700, fontSize: 13.5, fontFamily: FONT_DISPLAY }}>DPYMS v2 · Danish Healthcare</div>
           <div style={{ fontSize: 10, color: C.skyBlue, letterSpacing: 0.5 }}>
             {roleLabel}{deptLabel ? ` · ${deptLabel}` : ""}{userName ? ` · ${userName}` : ""}
           </div>
@@ -484,17 +565,17 @@ function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, sh
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {showRegisterLink && (
-          <button onClick={onOpenRegister} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer" }}>
-            Plant Register
+          <button onClick={onOpenRegister} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}>
+            Plant Register & Reports
           </button>
         )}
         {showDeptChange && (
-          <button onClick={onChangeDept} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer" }}>
+          <button onClick={onChangeDept} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}>
             ← Change Department
           </button>
         )}
-        <button onClick={onSwitchRole} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer" }}>
-          ← Home
+        <button onClick={onSwitchRole} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}>
+          ← Switch Role
         </button>
       </div>
     </div>
@@ -503,12 +584,13 @@ function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, sh
 
 function StatusPill({ status }) {
   let bg = C.line, fg = C.sub;
-  if (status === "Fully Allocated" || status === "Approved") { bg = C.okBg; fg = C.ok; }
+  if (status === "Fully Allocated" || status === "Approved" || status === "QA Approved") { bg = C.okBg; fg = C.ok; }
   else if (status === "Under-allocated" || status === "Pending" || status === "On Hold") { bg = C.warnBg; fg = C.warn; }
-  else if (status === "OVER-ALLOCATED!" || status === "Rejected") { bg = C.badBg; fg = C.bad; }
+  else if (status === "OVER-ALLOCATED!" || status === "Rejected" || status === "QA Rejected") { bg = C.badBg; fg = C.bad; }
   if (!status) return <span style={{ color: C.sub, fontSize: 12 }}>—</span>;
   return <span style={{ background: bg, color: fg, fontSize: 11.5, fontWeight: 700, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>{status}</span>;
 }
+
 function YieldBadge({ value }) {
   if (value === "" || value === undefined || value === null) return <span style={{ color: C.sub }}>—</span>;
   if (value === "NA") return <span style={{ color: C.sub }}>NA</span>;
@@ -516,15 +598,17 @@ function YieldBadge({ value }) {
   if (value < 90) color = C.bad; else if (value < 97) color = C.warn;
   return <span style={{ color, fontWeight: 700, fontFamily: FONT_MONO }}>{value}%</span>;
 }
+
 function DeptTag({ dept }) {
   const d = DEPARTMENTS[dept];
   if (!d) return null;
   return (
-    <span style={{ background: C.paleBg, border: `1px solid ${C.line}`, color: C.navy, fontSize: 10.5, fontWeight: 700, padding: "2px 8px", borderRadius: 6 }}>
-      {d.icon} {d.label}
+    <span style={{ background: C.paleBg, border: `1px solid ${C.line}`, color: C.navy, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <img src={d.imgSrc} alt="" style={{ width: 16, height: 16, borderRadius: 4, objectFit: "cover" }} /> {d.label}
     </span>
   );
 }
+
 function Field({ label, children, hint }) {
   return (
     <label style={{ display: "block", marginBottom: 14 }}>
@@ -534,6 +618,7 @@ function Field({ label, children, hint }) {
     </label>
   );
 }
+
 const inputStyle = { width: "100%", padding: "11px 12px", fontSize: 15, border: `1.5px solid ${C.line}`, borderRadius: 9, outline: "none", fontFamily: FONT_BODY, color: C.ink, background: C.white, boxSizing: "border-box" };
 function TextInput(props) { return <input {...props} style={{ ...inputStyle, ...(props.style || {}) }} />; }
 function SelectInput({ children, ...props }) { return <select {...props} style={{ ...inputStyle, ...(props.style || {}) }}>{children}</select>; }
@@ -575,168 +660,225 @@ function SectionHeading({ eyebrow, title, sub, small, right }) {
     </div>
   );
 }
-function StorageIndicator({ status }) {
-  const map = {
-    connected: { color: C.ok, label: "Storage connected" },
-    saving: { color: C.warn, label: "Saving…" },
-    error: { color: C.bad, label: "Storage error — check connection" },
-  };
-  const s = map[status] || map.connected;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: s.color, marginBottom: 14 }}>
-      <div style={{ width: 7, height: 7, borderRadius: "50%", background: s.color }} />
-      {s.label}
-    </div>
-  );
-}
 
 // ============================================================================
-// PRODUCTION SCREEN — Mother Batch entry, branches by department
+// PRODUCTION SCREEN — Multi-stage Mother Batch Entry & Editing
 // ============================================================================
 function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches, storageStatus, setStorageStatus }) {
-  const isTabletCapsule = dept === "tablet" || dept === "capsule";
   const d = DEPARTMENTS[dept];
+  const isTablet = dept === "tablet";
+  const isCapsule = dept === "capsule";
+  const isOrsOintment = dept === "ors" || dept === "ointment";
 
-  const blank = isTabletCapsule
-    ? {
-        id: "", dept, date: new Date().toISOString().slice(0, 10), genericName: "", productGroup: "",
-        avgUnitWt: "", plannedBatchWt: "", rrGran: "0", granOutput: "", compOutput: "", compRR: "0",
-        coated: "N", coatOutput: "", remarks: "", loggedBy: userName || "",
-        splitCount: "1", splitNames: "",
-      }
-    : {
-        id: "", dept, date: new Date().toISOString().slice(0, 10), genericName: "", productGroup: "",
-        plannedQty: "", mixOutputKg: "", fillOutputQty: "", remarks: "", loggedBy: userName || "",
-        splitCount: "1", splitNames: "",
-      };
+  const blank = {
+    id: "", dept, date: new Date().toISOString().slice(0, 10), genericName: "", productGroup: "",
+    avgUnitWt: "", plannedLakhUnits: "", plannedBatchWt: "", rrGran: "0", granOutput: "", compOutput: "", compRR: "0",
+    coated: "N", coreAvgWt: "", coatWtGainPct: "", actualCoatedWt: "", coatOutput: "", coatMatConsumed: "",
+    fillWtMg: "", shellWtMg: "",
+    plannedQty: "", mixOutputKg: "", fillOutputQty: "",
+    remarks: "", loggedBy: userName || "", qaStatus: "Pending",
+  };
 
   const [form, setForm] = useState(blank);
+  const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState("");
   const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => { setForm(blank); }, [dept]); // eslint-disable-line
+  useEffect(() => { setForm(blank); setEditingId(null); }, [dept]); // eslint-disable-line
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const submit = async () => {
-    if (isTabletCapsule) {
-      if (!form.genericName || !form.avgUnitWt || !form.plannedBatchWt) {
-        setToast("Please fill Generic Name, Avg Unit Wt, and Batch Wt");
-        return;
-      }
-    } else {
-      if (!form.genericName || !form.plannedQty) {
-        setToast("Please fill Generic Name and Planned Quantity");
-        return;
-      }
+  const previewLakhs = form.plannedLakhUnits ? parseFloat(form.plannedLakhUnits) : "";
+  const previewAvgWt = isCapsule ? (parseFloat(form.fillWtMg) || parseFloat(form.avgUnitWt)) : parseFloat(form.avgUnitWt);
+  const calculatedReqKg = previewLakhs && previewAvgWt ? round2((previewLakhs * 100000 * previewAvgWt) / 1000000) : "";
+
+  const saveRecord = async (isUpdate = false) => {
+    if (!form.genericName) {
+      setToast("Please enter Generic Product Name");
+      return;
     }
-    const id = genMBId(motherBatches, dept);
-    const record = { ...form, id, createdAt: Date.now() };
-    const updated = sortNewestFirst([record, ...motherBatches]);
-    setMotherBatches(updated);
+
+    let recordId = form.id;
+    if (!recordId) recordId = genMBId(motherBatches, dept);
+
+    const updatedForm = { ...form, id: recordId, createdAt: form.createdAt || Date.now() };
+
+    let updatedList;
+    if (isUpdate && editingId) {
+      updatedList = motherBatches.map((m) => (m.id === editingId ? updatedForm : m));
+    } else {
+      updatedList = [updatedForm, ...motherBatches.filter((m) => m.id !== recordId)];
+    }
+
+    const sorted = sortNewestFirst(updatedList);
+    setMotherBatches(sorted);
     setStorageStatus("saving");
-    const result = await saveShared("dpyms_mother_batches", updated);
+    const result = await saveShared("dpyms_mother_batches", sorted);
     setStorageStatus(result.ok ? "connected" : "error");
+
+    setToast(result.ok ? `Mother Batch ${recordId} ${isUpdate ? "updated" : "saved"}` : `Save failed`);
+    if (isUpdate) setEditingId(null);
     setForm({ ...blank, date: new Date().toISOString().slice(0, 10) });
-    setToast(result.ok ? `Mother Batch ${id} saved` : `Save failed: ${result.error || "unknown error"} — data kept on screen, try Save again`);
+  };
+
+  const editBatch = (mb) => {
+    setForm(mb);
+    setEditingId(mb.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const deptBatches = motherBatches.filter((m) => m.dept === dept);
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "20px 16px 60px" }}>
-      <SectionHeading eyebrow={`Production · ${d.label}`} title={`Log a ${d.label} Mother Batch`} sub="One entry per mother batch." />
-      <StorageIndicator status={storageStatus} />
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 16px 60px" }}>
+      <SectionHeading eyebrow={`Production · ${d.label}`} title={`${editingId ? "Edit" : "Log"} ${d.label} Mother Batch`} sub="Progressive multi-stage record." />
 
-      <Card style={{ padding: 20, marginBottom: 24 }}>
+      <UniversalActionBar
+        onSave={() => saveRecord(false)}
+        onEdit={editingId ? null : () => deptBatches[0] && editBatch(deptBatches[0])}
+        onUpdate={() => saveRecord(true)}
+        onBack={() => { setForm(blank); setEditingId(null); }}
+        isEditing={!!editingId}
+      />
+
+      <Card style={{ padding: 22, marginBottom: 24 }}>
+        {editingId && (
+          <div style={{ background: C.warnBg, color: C.warn, padding: "8px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, marginBottom: 16 }}>
+            ✏️ Editing Active Batch: {editingId}
+          </div>
+        )}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <Field label="Date"><TextInput type="date" value={form.date} onChange={set("date")} /></Field>
-          <Field label="Logged by"><TextInput placeholder="Your name" value={form.loggedBy} onChange={set("loggedBy")} /></Field>
+          <Field label="Logged by"><TextInput placeholder="Operator / Supervisor Name" value={form.loggedBy} onChange={set("loggedBy")} /></Field>
         </div>
 
         <Field label="Generic Name">
-          <TextInput placeholder={isTabletCapsule ? "e.g. LOPERAMIDE HCl TABLETS IP 2 MG" : dept === "ors" ? "e.g. ORS POWDER (WHO FORMULA)" : "e.g. CLOBETASOL PROPIONATE OINTMENT"} value={form.genericName} onChange={set("genericName")} />
+          <TextInput placeholder={isTablet ? "e.g. LOPERAMIDE HCl TABLETS IP 2 MG" : isCapsule ? "e.g. OMEPRAZOLE CAPSULES BP 20 MG" : "e.g. ORS POWDER (WHO FORMULA)"} value={form.genericName} onChange={set("genericName")} />
         </Field>
-        <Field label="Product Group" hint="The brand family this batch will be split across">
+        <Field label="Product Group / Brand Family">
           <TextInput placeholder="e.g. LOPRABLUE / LOPAGONE GROUP" value={form.productGroup} onChange={set("productGroup")} />
         </Field>
 
-        {isTabletCapsule ? (
+        {isTablet && (
           <>
-            <Field label="Avg Unit Wt (mg)"><TextInput type="number" placeholder="e.g. 220" value={form.avgUnitWt} onChange={set("avgUnitWt")} /></Field>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Field label="Planned Batch Wt (kg)"><TextInput type="number" placeholder="e.g. 418" value={form.plannedBatchWt} onChange={set("plannedBatchWt")} /></Field>
+              <Field label="Planned Tablets (in Lakhs)" hint="e.g. 5.00, 10.50">
+                <TextInput type="number" step="0.01" placeholder="e.g. 10.00" value={form.plannedLakhUnits} onChange={set("plannedLakhUnits")} />
+              </Field>
+              <Field label="Avg Tablet Wt (mg)"><TextInput type="number" placeholder="e.g. 220" value={form.avgUnitWt} onChange={set("avgUnitWt")} /></Field>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="Planned Batch Wt (kg)" hint={calculatedReqKg ? `Auto Req: ${calculatedReqKg} kg` : "Batch size in kg"}>
+                <TextInput type="number" placeholder={calculatedReqKg || "e.g. 220"} value={form.plannedBatchWt || calculatedReqKg} onChange={set("plannedBatchWt")} />
+              </Field>
               <Field label="RR Added — Granulation (kg)"><TextInput type="number" value={form.rrGran} onChange={set("rrGran")} /></Field>
             </div>
+
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Field label="Gran Output (kg)"><TextInput type="number" value={form.granOutput} onChange={set("granOutput")} /></Field>
-              <Field label="Comp Output (kg)"><TextInput type="number" value={form.compOutput} onChange={set("compOutput")} /></Field>
+              <Field label="Granulation Output (kg)"><TextInput type="number" value={form.granOutput} onChange={set("granOutput")} /></Field>
+              <Field label="Compression Output (kg)"><TextInput type="number" value={form.compOutput} onChange={set("compOutput")} /></Field>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 16, marginTop: 8, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>Coating Section Details</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <Field label="Coated Tablet?">
+                  <SelectInput value={form.coated} onChange={set("coated")}>
+                    <option value="N">No — Uncoated</option>
+                    <option value="Y">Yes — Coated</option>
+                  </SelectInput>
+                </Field>
+                {form.coated === "Y" && (
+                  <Field label="Target Weight Gain (%)"><TextInput type="number" placeholder="e.g. 3.0" value={form.coatWtGainPct} onChange={set("coatWtGainPct")} /></Field>
+                )}
+              </div>
+
+              {form.coated === "Y" && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    <Field label="Actual Coated Tablet Wt (mg)"><TextInput type="number" placeholder="e.g. 226.6" value={form.actualCoatedWt} onChange={set("actualCoatedWt")} /></Field>
+                    <Field label="Coating Output (kg)"><TextInput type="number" value={form.coatOutput} onChange={set("coatOutput")} /></Field>
+                  </div>
+                  <Field label="Coating Material Consumed (kg)"><TextInput type="number" placeholder="e.g. 8.5" value={form.coatMatConsumed} onChange={set("coatMatConsumed")} /></Field>
+                </>
+              )}
+            </div>
+          </>
+        )}
+
+        {isCapsule && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="Planned Capsules (in Lakhs)"><TextInput type="number" placeholder="e.g. 5.00" value={form.plannedLakhUnits} onChange={set("plannedLakhUnits")} /></Field>
+              <Field label="Avg Fill Weight (mg)"><TextInput type="number" placeholder="e.g. 250" value={form.fillWtMg} onChange={set("fillWtMg")} /></Field>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Field label="Comp RR (kg)"><TextInput type="number" value={form.compRR} onChange={set("compRR")} /></Field>
-              <Field label="Coated?">
-                <SelectInput value={form.coated} onChange={set("coated")}>
-                  <option value="N">No — uncoated</option>
-                  <option value="Y">Yes — coated</option>
-                </SelectInput>
+              <Field label="Avg Shell Weight (mg)"><TextInput type="number" placeholder="e.g. 76" value={form.shellWtMg} onChange={set("shellWtMg")} /></Field>
+              <Field label="Avg Filled Capsule Wt (mg)" hint="Auto calculated">
+                <TextInput type="number" value={(parseFloat(form.fillWtMg) || 0) + (parseFloat(form.shellWtMg) || 0) || form.avgUnitWt} readOnly style={{ background: C.paleBg }} />
               </Field>
             </div>
-            {form.coated === "Y" && (
-              <Field label="Coat Output (kg)"><TextInput type="number" value={form.coatOutput} onChange={set("coatOutput")} /></Field>
-            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <Field label="Granulation Output (kg)"><TextInput type="number" value={form.granOutput} onChange={set("granOutput")} /></Field>
+              <Field label="Filling Output (kg)"><TextInput type="number" value={form.compOutput} onChange={set("compOutput")} /></Field>
+            </div>
           </>
-        ) : (
+        )}
+
+        {isOrsOintment && (
           <>
             <Field label={`Planned Quantity (${dept === "ors" ? "sachets" : "tubes"})`}>
               <TextInput type="number" placeholder="e.g. 500000" value={form.plannedQty} onChange={set("plannedQty")} />
             </Field>
-            <Field label="Mix Output (kg)" hint="Total bulk mix/paste weight produced">
-              <TextInput type="number" value={form.mixOutputKg} onChange={set("mixOutputKg")} />
-            </Field>
-            <Field label={`Fill Output (${dept === "ors" ? "sachets" : "tubes"} actually filled)`}>
+            <Field label="Mix Output (kg)"><TextInput type="number" value={form.mixOutputKg} onChange={set("mixOutputKg")} /></Field>
+            <Field label={`Fill Output (${dept === "ors" ? "sachets" : "tubes"} filled)`}>
               <TextInput type="number" value={form.fillOutputQty} onChange={set("fillOutputQty")} />
             </Field>
           </>
         )}
 
-        <Field label="Remarks (optional)"><TextInput value={form.remarks} onChange={set("remarks")} /></Field>
-
-        <PrimaryButton onClick={submit} style={{ marginTop: 6 }}>Save Mother Batch</PrimaryButton>
+        <Field label="Remarks / Observations"><TextInput value={form.remarks} onChange={set("remarks")} /></Field>
       </Card>
 
-      <SectionHeading title={`Recent ${d.label} Mother Batches`} small sub="Newest first" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <SectionHeading title={`Recent ${d.label} Mother Batches`} small />
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {deptBatches.length === 0 && <EmptyNote text="No mother batches logged yet in this department." />}
         {deptBatches.map((mb) => {
           const calc = computeMB(mb, commercialBatches);
           const open = expandedId === mb.id;
           return (
             <Card key={mb.id} style={{ padding: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", cursor: "pointer" }} onClick={() => setExpandedId(open ? null : mb.id)}>
-                <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ cursor: "pointer", flex: 1 }} onClick={() => setExpandedId(open ? null : mb.id)}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: C.ink }}>{mb.id} · {mb.genericName || "Untitled"}</div>
                   <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
                     {fmtDate(mb.date)}{mb.loggedBy ? ` · by ${mb.loggedBy}` : ""} · Planned {calc.plannedLakh || "—"} {d.unit}
                   </div>
                 </div>
-                <StatusPill status={calc.status} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <StatusPill status={calc.status} />
+                  <button type="button" className="btn-nav btn-edit" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => editBatch(mb)}>✏️ Edit</button>
+                </div>
               </div>
               {open && (
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.line}`, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, fontSize: 12.5 }}>
-                  {isTabletCapsule ? (
+                  {isTablet && (
                     <>
-                      <Stat label="Gran Output" value={`${mb.granOutput || "—"} kg`} />
+                      <Stat label="Gran Output" value={`${mb.granOutput || "—"} kg (${calc.granLakh || "—"} L)`} />
                       <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
-                      <Stat label="Comp Output" value={`${mb.compOutput || "—"} kg`} />
+                      <Stat label="Comp Output" value={`${mb.compOutput || "—"} kg (${calc.compLakh || "—"} L)`} />
                       <Stat label="Comp Yield" value={<YieldBadge value={calc.compYield} />} />
                       <Stat label="Coat Output" value={calc.coat === "NA" ? "NA" : `${mb.coatOutput || "—"} kg`} />
                       <Stat label="Coat Yield" value={<YieldBadge value={calc.coatYield} />} />
                     </>
-                  ) : (
+                  )}
+                  {isCapsule && (
                     <>
-                      <Stat label="Mix Output" value={`${mb.mixOutputKg || "—"} kg`} />
-                      <Stat label="Fill Output" value={fmtNum(mb.fillOutputQty)} />
-                      <Stat label="Fill Yield" value={<YieldBadge value={calc.fillYield} />} />
+                      <Stat label="Required Fill" value={`${calc.requiredFillKg || "—"} kg`} />
+                      <Stat label="Required Shells" value={fmtNum(calc.requiredShellQty)} />
+                      <Stat label="Fill Yield" value={<YieldBadge value={calc.compYield} />} />
                     </>
                   )}
                   <Stat label="Allocated" value={`${calc.allocatedLakh} L`} />
@@ -754,7 +896,84 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
 }
 
 // ============================================================================
-// PACKAGING / QA SCREEN — Commercial Batch entry, with bulk multi-name split
+// QA SCREEN — Quality Assurance Inspection Module
+// ============================================================================
+function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches, setCommercialBatches, storageStatus, setStorageStatus }) {
+  const d = DEPARTMENTS[dept];
+  const deptMBs = motherBatches.filter((m) => m.dept === dept);
+
+  const [selectedMbId, setSelectedMbId] = useState(deptMBs[0]?.id || "");
+  const [qaStatus, setQaStatus] = useState("QA Approved");
+  const [qaAssay, setQaAssay] = useState("99.4");
+  const [qaRemarks, setQaRemarks] = useState("");
+  const [toast, setToast] = useState("");
+
+  const selectedMB = motherBatches.find((m) => m.id === selectedMbId);
+  const calc = selectedMB ? computeMB(selectedMB, commercialBatches) : null;
+
+  const saveQaApproval = async () => {
+    if (!selectedMB) return;
+    const updatedMBs = motherBatches.map((m) => m.id === selectedMbId ? { ...m, qaStatus, qaAssay, qaRemarks, qaInspector: userName || "QA Officer" } : m);
+    setMotherBatches(updatedMBs);
+    setStorageStatus("saving");
+    const res = await saveShared("dpyms_mother_batches", updatedMBs);
+    setStorageStatus(res.ok ? "connected" : "error");
+    setToast(`QA decision for ${selectedMbId} saved as ${qaStatus}`);
+  };
+
+  return (
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 16px 60px" }}>
+      <SectionHeading eyebrow={`Quality Assurance · ${d.label}`} title="QA Inspection & Quality Clearance" sub="Review yield statistics and sign off on batch quality." />
+
+      <UniversalActionBar
+        onSave={saveQaApproval}
+        onUpdate={saveQaApproval}
+        onBack={() => {}}
+      />
+
+      <Card style={{ padding: 20, marginBottom: 24 }}>
+        <Field label="Select Mother Batch for QA Clearance">
+          <SelectInput value={selectedMbId} onChange={(e) => setSelectedMbId(e.target.value)}>
+            {deptMBs.length === 0 && <option value="">No batches available</option>}
+            {deptMBs.map((m) => <option key={m.id} value={m.id}>{m.id} — {m.genericName} (Status: {m.qaStatus || "Pending"})</option>)}
+          </SelectInput>
+        </Field>
+
+        {selectedMB && calc && (
+          <div style={{ background: C.paleBg, borderRadius: 12, padding: 16, marginBottom: 18 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: C.navy, marginBottom: 10 }}>Batch Yield Summary — {selectedMB.id}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, fontSize: 13 }}>
+              <Stat label="Planned Lakhs" value={`${calc.plannedLakh} L`} />
+              <Stat label="Granulation Yield" value={<YieldBadge value={calc.granYield} />} />
+              <Stat label="Compression Yield" value={<YieldBadge value={calc.compYield} />} />
+              <Stat label="Coating Yield" value={<YieldBadge value={calc.coatYield} />} />
+              <Stat label="Current QA Status" value={<StatusPill status={selectedMB.qaStatus || "Pending"} />} />
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <Field label="QA Decision Status">
+            <SelectInput value={qaStatus} onChange={(e) => setQaStatus(e.target.value)}>
+              <option value="QA Approved">QA Approved</option>
+              <option value="Pending">Pending Inspection</option>
+              <option value="QA Rejected">QA Rejected</option>
+              <option value="On Hold">On Hold</option>
+            </SelectInput>
+          </Field>
+          <Field label="Assay / Potency (%)"><TextInput placeholder="e.g. 99.8%" value={qaAssay} onChange={(e) => setQaAssay(e.target.value)} /></Field>
+        </div>
+        <Field label="QA Inspection Remarks"><TextInput placeholder="e.g. Physical parameters, disintegration & dissolution meet IP specifications." value={qaRemarks} onChange={(e) => setQaRemarks(e.target.value)} /></Field>
+
+        <PrimaryButton onClick={saveQaApproval}>Save QA Clearance</PrimaryButton>
+      </Card>
+      {toast && <Toast message={toast} onDone={() => setToast("")} />}
+    </div>
+  );
+}
+
+// ============================================================================
+// PACKAGING SCREEN — Independent Packaging Department Module
 // ============================================================================
 function PackagingScreen({ dept, userName, setUserName, motherBatches, commercialBatches, setCommercialBatches, storageStatus, setStorageStatus }) {
   const d = DEPARTMENTS[dept];
@@ -767,9 +986,7 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
   }, [deptMBs]); // eslint-disable-line
 
   const selectedMB = motherBatches.find((m) => m.id === mbId);
-  const mbCalc = selectedMB ? computeMB(selectedMB, commercialBatches) : null;
 
-  // ---- Step A: how many commercial batches to create, and their names ----
   const [splitCount, setSplitCount] = useState(1);
   const [splitRows, setSplitRows] = useState([{ productName: "", batchNumber: "" }]);
   const [showSplitSetup, setShowSplitSetup] = useState(true);
@@ -784,10 +1001,10 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
     });
   };
 
-  // ---- Step B: per-batch detail entry (weight/qty, packed, dispatch) ----
   const detailBlank = isTabletCapsule
-    ? { allocatedKg: "", packedQty: "", dispatchQty: "", qaStatus: "Pending", remarks: "" }
-    : { allocatedQty: "", gramWtPerUnit: "", packedQty: "", dispatchQty: "", qaStatus: "Pending", remarks: "" };
+    ? { allocatedKg: "", unitsReceived: "", packedQty: "", dispatchQty: "", rejectedUnits: "0", damagedUnits: "0", remarks: "" }
+    : { allocatedQty: "", unitsReceived: "", gramWtPerUnit: "", packedQty: "", dispatchQty: "", rejectedUnits: "0", damagedUnits: "0", remarks: "" };
+
   const [details, setDetails] = useState({});
   const [toast, setToast] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -807,18 +1024,8 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
 
   const saveAll = async () => {
     if (!mbId) { setToast("Select a Mother Batch first"); return; }
-    const missing = splitRows.some((r, i) => {
-      const det = details[i] || {};
-      return isTabletCapsule ? !det.allocatedKg : (!det.allocatedQty || !det.gramWtPerUnit);
-    });
-    if (missing) { setToast("Please fill the allocated amount for every batch"); return; }
+    const newRecords = splitRows.map((r, i) => ({ r, det: details[i] || {} }));
 
-    const newRecords = splitRows.map((r, i) => {
-      const det = details[i] || {};
-      return { r, det };
-    });
-
-    // generate sequential unique IDs
     let running = [...commercialBatches];
     const finalRecords = [];
     newRecords.forEach(({ r, det }) => {
@@ -838,9 +1045,8 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
     setStorageStatus("saving");
     const result = await saveShared("dpyms_commercial_batches", updated);
     setStorageStatus(result.ok ? "connected" : "error");
-    setToast(result.ok ? `${finalRecords.length} commercial batch(es) saved` : `Save failed: ${result.error || "unknown error"} — try Save again`);
+    setToast(result.ok ? `${finalRecords.length} commercial batch(es) saved` : `Save failed`);
 
-    // reset for next round
     setSplitCount(1);
     setSplitRows([{ productName: "", batchNumber: "" }]);
     setDetails({});
@@ -850,43 +1056,36 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
   const deptCBs = commercialBatches.filter((c) => c.dept === dept);
 
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", padding: "20px 16px 60px" }}>
-      <SectionHeading eyebrow={`Packaging / QA · ${d.label}`} title="Log Commercial Batches" sub="Choose how many batches this Mother Batch splits into, name each, then fill details." />
-      <StorageIndicator status={storageStatus} />
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 16px 60px" }}>
+      <SectionHeading eyebrow={`Packaging · ${d.label}`} title="Log Commercial Batches & Packaging Yields" sub="Track Units Received, Packed, Dispatched, Rejections & Damaged units." />
+
+      <UniversalActionBar
+        onSave={saveAll}
+        onBack={() => setShowSplitSetup(true)}
+      />
 
       <Card style={{ padding: 20, marginBottom: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <Field label="Date"><TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Logged by"><TextInput placeholder="Your name" value={userName} onChange={(e) => setUserName(e.target.value)} /></Field>
+          <Field label="Packaging Supervisor"><TextInput placeholder="Your name" value={userName} onChange={(e) => setUserName(e.target.value)} /></Field>
         </div>
-        <div style={{ marginBottom: 14 }}>
-          <Field label="Mother Batch">
-            <SelectInput value={mbId} onChange={(e) => setMbId(e.target.value)}>
-              {deptMBs.length === 0 && <option value="">No mother batches available</option>}
-              {deptMBs.map((mb) => <option key={mb.id} value={mb.id}>{mb.id} — {mb.genericName || "Untitled"}</option>)}
-            </SelectInput>
-          </Field>
-        </div>
-
-        {mbCalc && (
-          <div style={{ background: C.paleBg, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 12.5, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <span>Planned <b>{mbCalc.plannedLakh || "—"} L</b></span>
-            <span>Allocated <b>{mbCalc.allocatedLakh} L</b></span>
-            <span>Remaining <b style={{ color: mbCalc.unallocated < 0 ? C.bad : C.ink }}>{mbCalc.unallocated} L</b></span>
-            <StatusPill status={mbCalc.status} />
-          </div>
-        )}
+        <Field label="Mother Batch">
+          <SelectInput value={mbId} onChange={(e) => setMbId(e.target.value)}>
+            {deptMBs.length === 0 && <option value="">No mother batches available</option>}
+            {deptMBs.map((mb) => <option key={mb.id} value={mb.id}>{mb.id} — {mb.genericName || "Untitled"}</option>)}
+          </SelectInput>
+        </Field>
 
         {showSplitSetup ? (
           <>
-            <Field label="Number of Commercial Batches" hint="How many products is this Mother Batch being split into?">
+            <Field label="Number of Commercial Batches" hint="How many brand lines is this Mother Batch split into?">
               <TextInput type="number" min="1" max="20" value={splitCount} onChange={(e) => applySplitCount(e.target.value)} />
             </Field>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {splitRows.map((row, i) => (
                 <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: C.paleBg, padding: 12, borderRadius: 10 }}>
                   <Field label={`Batch ${i + 1} — Product Name`}>
-                    <TextInput placeholder="e.g. LOPRABLUE" value={row.productName} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, productName: e.target.value } : r))} />
+                    <TextInput placeholder="e.g. LOPRABLUE TABLETS 2 MG" value={row.productName} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, productName: e.target.value } : r))} />
                   </Field>
                   <Field label={`Batch ${i + 1} — Batch Number`}>
                     <TextInput placeholder="e.g. LEA26001" value={row.batchNumber} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, batchNumber: e.target.value } : r))} />
@@ -894,65 +1093,67 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
                 </div>
               ))}
             </div>
-            <PrimaryButton onClick={startDetailEntry}>Continue to Batch Details →</PrimaryButton>
+            <PrimaryButton onClick={startDetailEntry}>Continue to Packaging Details →</PrimaryButton>
           </>
         ) : (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
               {splitRows.map((row, i) => {
                 const det = details[i] || {};
+                const recv = parseFloat(det.unitsReceived) || 0;
+                const packed = parseFloat(det.packedQty) || 0;
+                const rej = parseFloat(det.rejectedUnits) || 0;
+                const dam = parseFloat(det.damagedUnits) || 0;
+                const bal = Math.max(0, recv - (packed + rej + dam));
+                const yieldPct = recv > 0 ? pct(packed, recv) : "";
+
                 return (
-                  <Card key={i} style={{ padding: 14, background: C.paleBg }}>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 10 }}>
-                      {row.productName} <span style={{ color: C.sub, fontWeight: 400 }}>· {row.batchNumber}</span>
+                  <Card key={i} style={{ padding: 16, background: C.paleBg }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: C.navy, marginBottom: 12 }}>
+                      {row.productName} <span style={{ color: C.sub, fontWeight: 400 }}>· Batch #{row.batchNumber}</span>
                     </div>
-                    {isTabletCapsule ? (
-                      <Field label="Allocated Batch Wt (kg)" hint="Portion of mother batch given to this product">
-                        <TextInput type="number" value={det.allocatedKg || ""} onChange={setDetail(i, "allocatedKg")} />
-                      </Field>
-                    ) : (
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        <Field label={`Allocated Qty (${dept === "ors" ? "sachets" : "tubes"})`}>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {isTabletCapsule ? (
+                        <Field label="Allocated Batch Wt (kg)">
+                          <TextInput type="number" value={det.allocatedKg || ""} onChange={setDetail(i, "allocatedKg")} />
+                        </Field>
+                      ) : (
+                        <Field label="Allocated Qty (units)">
                           <TextInput type="number" value={det.allocatedQty || ""} onChange={setDetail(i, "allocatedQty")} />
                         </Field>
-                        <Field label="Weight per Unit (g)" hint="Typed manually">
-                          <TextInput type="number" value={det.gramWtPerUnit || ""} onChange={setDetail(i, "gramWtPerUnit")} />
-                        </Field>
-                      </div>
-                    )}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <Field label={`Packed Qty (${isTabletCapsule ? "tabs" : dept === "ors" ? "sachets" : "tubes"})`}>
-                        <TextInput type="number" value={det.packedQty || ""} onChange={setDetail(i, "packedQty")} />
-                      </Field>
-                      <Field label="Dispatch Qty">
-                        <TextInput type="number" value={det.dispatchQty || ""} onChange={setDetail(i, "dispatchQty")} />
-                      </Field>
+                      )}
+                      <Field label="Units Received (Counts/Lakhs)"><TextInput type="number" value={det.unitsReceived || ""} onChange={setDetail(i, "unitsReceived")} /></Field>
                     </div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <Field label="QA Status">
-                        <SelectInput value={det.qaStatus || "Pending"} onChange={setDetail(i, "qaStatus")}>
-                          <option>Pending</option><option>Approved</option><option>Rejected</option><option>On Hold</option>
-                        </SelectInput>
-                      </Field>
-                      <Field label="Remarks">
-                        <TextInput value={det.remarks || ""} onChange={setDetail(i, "remarks")} />
-                      </Field>
+                      <Field label="Units Packed"><TextInput type="number" value={det.packedQty || ""} onChange={setDetail(i, "packedQty")} /></Field>
+                      <Field label="Units Dispatched"><TextInput type="number" value={det.dispatchQty || ""} onChange={setDetail(i, "dispatchQty")} /></Field>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                      <Field label="Rejected Units"><TextInput type="number" value={det.rejectedUnits || "0"} onChange={setDetail(i, "rejectedUnits")} /></Field>
+                      <Field label="Damaged Units"><TextInput type="number" value={det.damagedUnits || "0"} onChange={setDetail(i, "damagedUnits")} /></Field>
+                      <Field label="Balance Units (Auto)"><TextInput type="number" value={bal} readOnly style={{ background: C.white }} /></Field>
+                    </div>
+
+                    <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: C.navy }}>
+                      Packaging Yield: <YieldBadge value={yieldPct} />
                     </div>
                   </Card>
                 );
               })}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <SecondaryButton onClick={() => setShowSplitSetup(true)} style={{ flex: 1 }}>← Edit Names</SecondaryButton>
-              <PrimaryButton onClick={saveAll} style={{ flex: 2 }}>Save All {splitRows.length} Batch(es)</PrimaryButton>
+              <SecondaryButton onClick={() => setShowSplitSetup(true)} style={{ flex: 1 }}>← Back</SecondaryButton>
+              <PrimaryButton onClick={saveAll} style={{ flex: 2 }}>Save Packaging Records</PrimaryButton>
             </div>
           </>
         )}
       </Card>
 
-      <SectionHeading title={`Recent ${d.label} Commercial Batches`} small sub="Newest first" />
+      <SectionHeading title={`Recent Packaging Records`} small />
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {deptCBs.length === 0 && <EmptyNote text="No commercial batches logged yet in this department." />}
         {deptCBs.map((cb) => {
           const calc = computeCB(cb, motherBatches);
           return (
@@ -961,12 +1162,12 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{cb.id} · {cb.productName}</div>
                   <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
-                    {cb.batchNumber} · linked to {cb.mbId} · {fmtDate(cb.date)}{cb.loggedBy ? ` · by ${cb.loggedBy}` : ""}
+                    Batch #{cb.batchNumber} · Packed: {fmtNum(cb.packedQty)} · Rejections: {fmtNum(cb.rejectedUnits)}
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <YieldBadge value={calc.finalYield} />
-                  <div style={{ fontSize: 10, color: C.sub, marginTop: 2 }}>final yield</div>
+                  <YieldBadge value={calc.pkgYield} />
+                  <div style={{ fontSize: 10, color: C.sub }}>Pkg Yield</div>
                 </div>
               </div>
             </Card>
@@ -979,49 +1180,46 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
 }
 
 // ============================================================================
-// BATCH SPLIT VISUAL
+// BATCH SPLIT VISUALIZER (For Manager Dashboard)
 // ============================================================================
 function BatchSplitVisual({ mb, commercialBatches, calc }) {
   const linked = commercialBatches.filter((c) => c.mbId === mb.id);
   if (linked.length === 0) return null;
   const total = calc.plannedLakh || 1;
   return (
-    <div style={{ marginTop: 14 }}>
-      <div style={{ fontSize: 10.5, color: C.sub, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Batch Split</div>
+    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px dashed ${C.line}` }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: C.navy, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Commercial Batch Split Allocation</div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.white, background: C.navy, borderRadius: 8, padding: "8px 10px", minWidth: 70, textAlign: "center" }}>
-          {mb.id}<div style={{ fontSize: 9, fontWeight: 400, opacity: 0.8 }}>{calc.plannedLakh}L</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.white, background: C.navy, borderRadius: 8, padding: "8px 10px", minWidth: 80, textAlign: "center" }}>
+          {mb.id}<div style={{ fontSize: 9.5, fontWeight: 400, opacity: 0.85 }}>{calc.plannedLakh} L</div>
         </div>
-        <div style={{ color: C.line, fontSize: 18 }}>→</div>
-        <div style={{ display: "flex", flex: 1, height: 26, borderRadius: 6, overflow: "hidden", border: `1px solid ${C.line}` }}>
+        <div style={{ color: C.sub, fontSize: 16 }}>→</div>
+        <div style={{ display: "flex", flex: 1, height: 28, borderRadius: 6, overflow: "hidden", border: `1px solid ${C.line}` }}>
           {linked.map((cb, i) => {
             const cbCalc = computeCB(cb, [mb]);
-            const w = typeof cbCalc.allocLakh === "number" ? Math.max((cbCalc.allocLakh / total) * 100, 4) : 100 / linked.length;
+            const w = typeof cbCalc.allocLakh === "number" ? Math.max((cbCalc.allocLakh / total) * 100, 5) : 100 / linked.length;
             const hue = 215 - i * (55 / Math.max(linked.length, 1));
-            return <div key={cb.id} title={`${cb.productName}: ${cbCalc.allocLakh || "?"}L`} style={{ width: `${w}%`, background: `hsl(${hue}, 55%, ${40 + (i % 3) * 8}%)`, borderRight: `1px solid ${C.white}` }} />;
+            return (
+              <div key={cb.id} title={`${cb.productName}: ${cbCalc.allocLakh || "?"} Lakhs`} style={{ width: `${w}%`, background: `hsl(${hue}, 60%, ${38 + (i % 3) * 8}%)`, borderRight: `1px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.white, fontSize: 10.5, fontWeight: 700 }}>
+                {cb.batchNumber}
+              </div>
+            );
           })}
         </div>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", marginTop: 8 }}>
-        {linked.map((cb) => <div key={cb.id} style={{ fontSize: 10.5, color: C.sub }}><b style={{ color: C.ink }}>{cb.productName}</b> {cb.batchNumber}</div>)}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 8 }}>
+        {linked.map((cb) => (
+          <div key={cb.id} style={{ fontSize: 11, color: C.sub }}>
+            <b style={{ color: C.ink }}>{cb.productName}</b> (#{cb.batchNumber}) — Packed: {fmtNum(cb.packedQty)}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function KpiCard({ label, value, sub, tone }) {
-  const toneColors = { ok: C.ok, warn: C.warn, bad: C.bad };
-  return (
-    <Card style={{ padding: "14px 16px" }}>
-      <div style={{ fontSize: 10.5, color: C.sub, textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, fontFamily: FONT_DISPLAY, color: tone ? toneColors[tone] : C.navy, marginTop: 2 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>{sub}</div>}
-    </Card>
-  );
-}
-
 // ============================================================================
-// MANAGER DASHBOARD — plant-wide, all departments
+// RICH MANAGER DASHBOARD — FULL PLANT DETAIL & KPI ANALYTICS
 // ============================================================================
 function ManagerScreen({ motherBatches, commercialBatches, onOpenRegister }) {
   const [deptFilter, setDeptFilter] = useState("all");
@@ -1031,9 +1229,9 @@ function ManagerScreen({ motherBatches, commercialBatches, onOpenRegister }) {
   const totals = useMemo(() => {
     const alerts = rows.filter((r) => r.calc.status === "OVER-ALLOCATED!").length;
     const cbInScope = deptFilter === "all" ? commercialBatches : commercialBatches.filter((c) => c.dept === deptFilter);
-    const pending = cbInScope.filter((c) => c.qaStatus === "Pending").length;
-    const rejected = cbInScope.filter((c) => c.qaStatus === "Rejected").length;
-    return { alerts, pending, rejected, batches: filteredMBs.length, splits: cbInScope.length };
+    const pendingQA = rows.filter((r) => r.mb.qaStatus === "Pending" || !r.mb.qaStatus).length;
+    const approvedQA = rows.filter((r) => r.mb.qaStatus === "QA Approved").length;
+    return { alerts, pendingQA, approvedQA, batches: filteredMBs.length, splits: cbInScope.length };
   }, [rows, commercialBatches, filteredMBs, deptFilter]);
 
   const byDept = DEPT_LIST.map((d) => {
@@ -1043,67 +1241,82 @@ function ManagerScreen({ motherBatches, commercialBatches, onOpenRegister }) {
   });
 
   return (
-    <div style={{ maxWidth: 980, margin: "0 auto", padding: "20px 16px 60px" }}>
+    <div style={{ maxWidth: 1040, margin: "0 auto", padding: "20px 16px 60px" }}>
       <SectionHeading
-        eyebrow="Manager"
-        title="Plant-Wide Dashboard"
-        sub="Every stage, every department, live."
-        right={<SecondaryButton onClick={onOpenRegister}>Open Plant Register →</SecondaryButton>}
+        eyebrow="Manager Dashboard"
+        title="Plant-Wide Manufacturing & Yield Overview"
+        sub="Full plant visibility — Granulation, Compression, Coating, QA & Packaging."
+        right={<SecondaryButton onClick={onOpenRegister}>Open Plant Register & Reports →</SecondaryButton>}
       />
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
-        <FilterChip active={deptFilter === "all"} onClick={() => setDeptFilter("all")} label="All Departments" />
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+        <FilterChip active={deptFilter === "all"} onClick={() => setDeptFilter("all")} label="All Product Lines" />
         {DEPT_LIST.map((d) => (
-          <FilterChip key={d.key} active={deptFilter === d.key} onClick={() => setDeptFilter(d.key)} label={`${d.icon} ${d.label}`} />
+          <FilterChip key={d.key} active={deptFilter === d.key} onClick={() => setDeptFilter(d.key)} label={`${d.label}`} />
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginBottom: 18 }}>
-        <KpiCard label="Mother Batches" value={totals.batches} />
-        <KpiCard label="Commercial Batches" value={totals.splits} />
-        <KpiCard label="Over-allocated" value={totals.alerts} tone={totals.alerts > 0 ? "bad" : "ok"} />
-        <KpiCard label="QA Pending" value={totals.pending} tone={totals.pending > 0 ? "warn" : "ok"} />
-        <KpiCard label="QA Rejected" value={totals.rejected} tone={totals.rejected > 0 ? "bad" : "ok"} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 22 }}>
+        <Card style={{ padding: "16px" }}>
+          <Stat label="Mother Batches" value={totals.batches} />
+        </Card>
+        <Card style={{ padding: "16px" }}>
+          <Stat label="Commercial Batches" value={totals.splits} />
+        </Card>
+        <Card style={{ padding: "16px" }}>
+          <Stat label="QA Approved" value={totals.approvedQA} />
+        </Card>
+        <Card style={{ padding: "16px" }}>
+          <Stat label="Pending QA" value={totals.pendingQA} />
+        </Card>
+        <Card style={{ padding: "16px" }}>
+          <Stat label="Over-Allocated Alerts" value={totals.alerts} />
+        </Card>
       </div>
 
       {deptFilter === "all" && (
         <>
-          <SectionHeading title="By Department" small />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 24 }}>
+          <SectionHeading title="Production Sections" small />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14, marginBottom: 26 }}>
             {byDept.map((d) => (
-              <Card key={d.key} style={{ padding: "14px 16px", cursor: "pointer" }} onClick={() => setDeptFilter(d.key)}>
-                <div style={{ fontSize: 20 }}>{d.icon}</div>
-                <div style={{ fontWeight: 700, fontSize: 13.5, color: C.ink, marginTop: 4 }}>{d.label}</div>
-                <div style={{ fontSize: 11.5, color: C.sub, marginTop: 2 }}>{d.count} mother · {d.splits} commercial</div>
+              <Card key={d.key} style={{ padding: "18px 16px", cursor: "pointer" }} onClick={() => setDeptFilter(d.key)}>
+                <img src={d.imgSrc} alt={d.label} style={{ width: 48, height: 48, borderRadius: 10, objectFit: "cover", marginBottom: 10 }} />
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.ink }}>{d.label}</div>
+                <div style={{ fontSize: 12, color: C.sub, marginTop: 4 }}>{d.count} mother · {d.splits} commercial</div>
               </Card>
             ))}
           </div>
         </>
       )}
 
-      <SectionHeading title="Mother Batches — Detail" small sub="Newest first" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {rows.length === 0 && <EmptyNote text="No batches logged yet." />}
+      <SectionHeading title="Mother Batches — Complete Stage Detail" small sub="Full yield breakdowns & split tracking" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {rows.length === 0 && <EmptyNote text="No batches logged yet in this section." />}
         {rows.map(({ mb, calc }) => {
-          const isTC = mb.dept === "tablet" || mb.dept === "capsule";
+          const isTablet = mb.dept === "tablet";
+          const isCapsule = mb.dept === "capsule";
           const unit = DEPARTMENTS[mb.dept]?.unit || "L";
+
           return (
-            <Card key={mb.id} style={{ padding: 18 }}>
+            <Card key={mb.id} style={{ padding: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 16, display: "flex", alignItems: "center", gap: 10 }}>
                     {mb.id} · {mb.genericName || "Untitled"} <DeptTag dept={mb.dept} />
                   </div>
-                  <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
-                    {mb.productGroup} · {fmtDate(mb.date)}{mb.loggedBy ? ` · logged by ${mb.loggedBy}` : ""}
+                  <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>
+                    Group: <b>{mb.productGroup || "N/A"}</b> · {fmtDate(mb.date)}{mb.loggedBy ? ` · Logged by ${mb.loggedBy}` : ""}
                   </div>
                 </div>
-                <StatusPill status={calc.status} />
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <StatusPill status={mb.qaStatus || "Pending"} />
+                  <StatusPill status={calc.status} />
+                </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginTop: 14, fontSize: 12.5 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12, marginTop: 16, fontSize: 13 }}>
                 <Stat label="Planned" value={`${calc.plannedLakh || "—"} ${unit}`} />
-                {isTC ? (
+                {isTablet && (
                   <>
                     <Stat label="Gran Output" value={`${mb.granOutput || "—"} kg`} />
                     <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
@@ -1112,18 +1325,17 @@ function ManagerScreen({ motherBatches, commercialBatches, onOpenRegister }) {
                     <Stat label="Coat Output" value={calc.coat === "NA" ? "NA" : `${mb.coatOutput || "—"} kg`} />
                     <Stat label="Coat Yield" value={<YieldBadge value={calc.coatYield} />} />
                   </>
-                ) : (
+                )}
+                {isCapsule && (
                   <>
-                    <Stat label="Mix Output" value={`${mb.mixOutputKg || "—"} kg`} />
-                    <Stat label="Fill Output" value={fmtNum(mb.fillOutputQty)} />
-                    <Stat label="Fill Yield" value={<YieldBadge value={calc.fillYield} />} />
+                    <Stat label="Gran Output" value={`${mb.granOutput || "—"} kg`} />
+                    <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
+                    <Stat label="Filling Output" value={`${mb.compOutput || "—"} kg`} />
+                    <Stat label="Fill Yield" value={<YieldBadge value={calc.compYield} />} />
                   </>
                 )}
                 <Stat label="Allocated" value={`${calc.allocatedLakh} ${unit}`} />
                 <Stat label="Unallocated" value={`${calc.unallocated} ${unit}`} />
-                <Stat label="Packed (all)" value={`${calc.packedLakhTotal} ${unit}`} />
-                <Stat label="Dispatched (all)" value={`${calc.dispatchLakhTotal} ${unit}`} />
-                <Stat label="Splits" value={calc.linkedCount} />
               </div>
 
               <BatchSplitVisual mb={mb} commercialBatches={commercialBatches} calc={calc} />
@@ -1151,20 +1363,16 @@ function FilterChip({ active, onClick, label }) {
 }
 
 // ============================================================================
-// PLANT REGISTER — full detailed log of every batch, date-wise, exportable
+// PLANT REGISTER & PRINTABLE GMP REPORTS
 // ============================================================================
 function PlantRegister({ motherBatches, commercialBatches, onBack }) {
-  const [tab, setTab] = useState("mother"); // "mother" | "commercial"
+  const [tab, setTab] = useState("mother");
   const [deptFilter, setDeptFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
 
-  const filterByCommon = (list, dateKey, textFields) =>
+  const filterList = (list, textFields) =>
     list.filter((r) => {
       if (deptFilter !== "all" && r.dept !== deptFilter) return false;
-      if (dateFrom && r[dateKey] < dateFrom) return false;
-      if (dateTo && r[dateKey] > dateTo) return false;
       if (search) {
         const hay = textFields.map((f) => (r[f] || "").toString().toLowerCase()).join(" ");
         if (!hay.includes(search.toLowerCase())) return false;
@@ -1172,151 +1380,144 @@ function PlantRegister({ motherBatches, commercialBatches, onBack }) {
       return true;
     });
 
-  const mbFiltered = sortNewestFirst(filterByCommon(motherBatches, "date", ["id", "genericName", "productGroup", "loggedBy"]));
-  const cbFiltered = sortNewestFirst(filterByCommon(commercialBatches, "date", ["id", "productName", "batchNumber", "mbId", "loggedBy"]));
+  const mbFiltered = sortNewestFirst(filterList(motherBatches, ["id", "genericName", "productGroup", "loggedBy"]));
+  const cbFiltered = sortNewestFirst(filterList(commercialBatches, ["id", "productName", "batchNumber", "mbId", "loggedBy"]));
 
   const exportMother = () => {
     const headers = [
       { key: "id", label: "MB ID" }, { key: "dept", label: "Department" }, { key: "date", label: "Date" },
-      { key: "loggedBy", label: "Logged By" }, { key: "genericName", label: "Generic Name" }, { key: "productGroup", label: "Product Group" },
-      { key: "plannedLakh", label: "Planned (Lakh)" }, { key: "granOutput", label: "Gran Output (kg)" }, { key: "granYield", label: "Gran Yield %" },
-      { key: "compOutput", label: "Comp Output (kg)" }, { key: "compYield", label: "Comp Yield %" }, { key: "coatOutput", label: "Coat Output (kg)" },
-      { key: "coatYield", label: "Coat Yield %" }, { key: "mixOutputKg", label: "Mix Output (kg)" }, { key: "fillOutputQty", label: "Fill Output Qty" },
-      { key: "fillYield", label: "Fill Yield %" }, { key: "allocatedLakh", label: "Allocated (Lakh)" }, { key: "unallocated", label: "Unallocated (Lakh)" },
-      { key: "status", label: "Allocation Status" }, { key: "remarks", label: "Remarks" },
+      { key: "genericName", label: "Generic Name" }, { key: "plannedLakh", label: "Planned (Lakh)" },
+      { key: "granYield", label: "Gran Yield %" }, { key: "compYield", label: "Comp Yield %" }, { key: "coatYield", label: "Coat Yield %" },
+      { key: "qaStatus", label: "QA Status" }
     ];
-    const rows = mbFiltered.map((mb) => {
-      const calc = computeMB(mb, commercialBatches);
-      return { ...mb, ...calc };
-    });
+    const rows = mbFiltered.map((mb) => ({ ...mb, ...computeMB(mb, commercialBatches) }));
     downloadCSV(`DPYMS_Mother_Batches_${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, headers));
   };
 
   const exportCommercial = () => {
     const headers = [
-      { key: "id", label: "CB ID" }, { key: "dept", label: "Department" }, { key: "mbId", label: "MB ID" }, { key: "date", label: "Date" },
-      { key: "loggedBy", label: "Logged By" }, { key: "productName", label: "Product Name" }, { key: "batchNumber", label: "Batch Number" },
-      { key: "allocatedKg", label: "Allocated (kg)" }, { key: "allocatedQty", label: "Allocated Qty" }, { key: "gramWtPerUnit", label: "Wt per Unit (g)" },
-      { key: "allocLakh", label: "Allocated (Lakh)" }, { key: "packedQty", label: "Packed Qty" }, { key: "packedLakh", label: "Packed (Lakh)" },
-      { key: "dispatchQty", label: "Dispatch Qty" }, { key: "dispatchLakh", label: "Dispatch (Lakh)" }, { key: "finalYield", label: "Final Yield %" },
-      { key: "qaStatus", label: "QA Status" }, { key: "remarks", label: "Remarks" },
+      { key: "id", label: "CB ID" }, { key: "productName", label: "Product Name" }, { key: "batchNumber", label: "Batch Number" },
+      { key: "packedQty", label: "Packed Qty" }, { key: "dispatchQty", label: "Dispatch Qty" }, { key: "pkgYield", label: "Pkg Yield %" }
     ];
-    const rows = cbFiltered.map((cb) => {
-      const calc = computeCB(cb, motherBatches);
-      return { ...cb, ...calc };
-    });
+    const rows = cbFiltered.map((cb) => ({ ...cb, ...computeCB(cb, motherBatches) }));
     downloadCSV(`DPYMS_Commercial_Batches_${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, headers));
   };
 
-  const exportEverything = () => { exportMother(); setTimeout(exportCommercial, 300); };
-
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "20px 16px 60px" }}>
-      <SectionHeading
-        eyebrow="Manager"
-        title="Plant Register"
-        sub="Complete record of every batch logged across the plant — filter, search, export."
-        right={<SecondaryButton onClick={onBack}>← Back to Dashboard</SecondaryButton>}
-      />
+    <div style={{ maxWidth: 1040, margin: "0 auto", padding: "20px 16px 60px" }}>
+      <div className="no-print">
+        <SectionHeading
+          eyebrow="Plant Register"
+          title="Complete Plant Records & GMP Reports"
+          sub="Filter, search, export CSV or print official GMP documentation."
+          right={
+            <div style={{ display: "flex", gap: 10 }}>
+              <SecondaryButton onClick={onBack}>← Back to Dashboard</SecondaryButton>
+              <PrimaryButton onClick={() => window.print()} style={{ width: "auto" }}>🖨️ Print Report</PrimaryButton>
+            </div>
+          }
+        />
 
-      <Card style={{ padding: 16, marginBottom: 18 }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-          <button onClick={() => setTab("mother")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${C.navy}`, background: tab === "mother" ? C.navy : C.white, color: tab === "mother" ? C.white : C.navy, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            Mother Batches ({mbFiltered.length})
-          </button>
-          <button onClick={() => setTab("commercial")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${C.navy}`, background: tab === "commercial" ? C.navy : C.white, color: tab === "commercial" ? C.white : C.navy, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            Commercial Batches ({cbFiltered.length})
-          </button>
-        </div>
+        <Card style={{ padding: 16, marginBottom: 20 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <button onClick={() => setTab("mother")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${C.navy}`, background: tab === "mother" ? C.navy : C.white, color: tab === "mother" ? C.white : C.navy, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              Mother Batches ({mbFiltered.length})
+            </button>
+            <button onClick={() => setTab("commercial")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${C.navy}`, background: tab === "commercial" ? C.navy : C.white, color: tab === "commercial" ? C.white : C.navy, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              Commercial Batches ({cbFiltered.length})
+            </button>
+          </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 12 }}>
-          <Field label="Department">
-            <SelectInput value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
-              <option value="all">All</option>
-              {DEPT_LIST.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-            </SelectInput>
-          </Field>
-          <Field label="From Date"><TextInput type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} /></Field>
-          <Field label="To Date"><TextInput type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} /></Field>
-          <Field label="Search"><TextInput placeholder="ID, name, batch no..." value={search} onChange={(e) => setSearch(e.target.value)} /></Field>
-        </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <Field label="Filter by Section">
+              <SelectInput value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
+                <option value="all">All Sections</option>
+                {DEPT_LIST.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
+              </SelectInput>
+            </Field>
+            <Field label="Search Register"><TextInput placeholder="Search ID, Generic Name, Batch No..." value={search} onChange={(e) => setSearch(e.target.value)} /></Field>
+          </div>
 
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <SecondaryButton onClick={tab === "mother" ? exportMother : exportCommercial}>
-            ⬇ Export {tab === "mother" ? "Mother Batches" : "Commercial Batches"} (CSV)
+            ⬇ Export {tab === "mother" ? "Mother Batches" : "Commercial Batches"} to Excel (CSV)
           </SecondaryButton>
-          <SecondaryButton onClick={exportEverything}>⬇ Export Entire Plant Register (both files)</SecondaryButton>
-        </div>
-      </Card>
+        </Card>
+      </div>
 
-      {tab === "mother" ? (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, background: C.white, borderRadius: 12, overflow: "hidden" }}>
+      <div style={{ background: C.white, padding: 30, borderRadius: 16, border: `1px solid ${C.line}` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${C.navy}`, paddingBottom: 16, marginBottom: 20 }}>
+          <img src="assets/danish_logo.jpg" alt="Danish Healthcare" style={{ height: 50 }} />
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: FONT_DISPLAY }}>DANISH HEALTH CARE (P) LTD.</div>
+            <div style={{ fontSize: 11, color: C.sub }}>76/27-29, Industrial Estate, Maxi Road, Ujjain 456010</div>
+            <div style={{ fontSize: 11, color: C.blue, fontWeight: 700 }}>GMP PRODUCTION YIELD REGISTER</div>
+          </div>
+        </div>
+
+        {tab === "mother" ? (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: C.navy, color: C.white, textAlign: "left" }}>
-                {["Date", "MB ID", "Dept", "Generic Name", "Logged By", "Planned", "Gran %", "Comp %", "Coat %", "Allocated", "Status"].map((h) => (
-                  <th key={h} style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
+              <tr style={{ background: C.navy, color: C.white }}>
+                <th style={{ padding: 8, textAlign: "left" }}>Date</th>
+                <th style={{ padding: 8, textAlign: "left" }}>MB ID</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Product</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Planned</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Gran Yield</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Comp Yield</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Coat Yield</th>
+                <th style={{ padding: 8, textAlign: "left" }}>QA Status</th>
               </tr>
             </thead>
             <tbody>
-              {mbFiltered.length === 0 && <tr><td colSpan={11} style={{ padding: 20, textAlign: "center", color: C.sub }}>No records match your filters.</td></tr>}
               {mbFiltered.map((mb, i) => {
                 const calc = computeMB(mb, commercialBatches);
-                const unit = DEPARTMENTS[mb.dept]?.unit.replace("Lakh ", "") || "";
                 return (
-                  <tr key={mb.id} style={{ background: i % 2 === 0 ? C.white : C.paleBg, borderBottom: `1px solid ${C.line}` }}>
-                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{fmtDate(mb.date)}</td>
-                    <td style={{ padding: "9px 12px", fontWeight: 700 }}>{mb.id}</td>
-                    <td style={{ padding: "9px 12px" }}><DeptTag dept={mb.dept} /></td>
-                    <td style={{ padding: "9px 12px" }}>{mb.genericName}</td>
-                    <td style={{ padding: "9px 12px" }}>{mb.loggedBy || "—"}</td>
-                    <td style={{ padding: "9px 12px" }}>{calc.plannedLakh || "—"} L</td>
-                    <td style={{ padding: "9px 12px" }}><YieldBadge value={calc.granYield} /></td>
-                    <td style={{ padding: "9px 12px" }}><YieldBadge value={calc.compYield} /></td>
-                    <td style={{ padding: "9px 12px" }}><YieldBadge value={calc.coatYield} /></td>
-                    <td style={{ padding: "9px 12px" }}>{calc.allocatedLakh} L</td>
-                    <td style={{ padding: "9px 12px" }}><StatusPill status={calc.status} /></td>
+                  <tr key={mb.id} style={{ borderBottom: `1px solid ${C.line}`, background: i % 2 === 0 ? C.white : C.paleBg }}>
+                    <td style={{ padding: 8 }}>{fmtDate(mb.date)}</td>
+                    <td style={{ padding: 8, fontWeight: 700 }}>{mb.id}</td>
+                    <td style={{ padding: 8 }}>{mb.genericName}</td>
+                    <td style={{ padding: 8 }}>{calc.plannedLakh} L</td>
+                    <td style={{ padding: 8 }}><YieldBadge value={calc.granYield} /></td>
+                    <td style={{ padding: 8 }}><YieldBadge value={calc.compYield} /></td>
+                    <td style={{ padding: 8 }}><YieldBadge value={calc.coatYield} /></td>
+                    <td style={{ padding: 8 }}><StatusPill status={mb.qaStatus || "Pending"} /></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, background: C.white, borderRadius: 12, overflow: "hidden" }}>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
-              <tr style={{ background: C.navy, color: C.white, textAlign: "left" }}>
-                {["Date", "CB ID", "Dept", "Product", "Batch No.", "MB ID", "Logged By", "Packed", "Dispatch", "Final Yield", "QA"].map((h) => (
-                  <th key={h} style={{ padding: "10px 12px", whiteSpace: "nowrap" }}>{h}</th>
-                ))}
+              <tr style={{ background: C.navy, color: C.white }}>
+                <th style={{ padding: 8, textAlign: "left" }}>Date</th>
+                <th style={{ padding: 8, textAlign: "left" }}>CB ID</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Product</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Batch No.</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Packed</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Dispatched</th>
+                <th style={{ padding: 8, textAlign: "left" }}>Pkg Yield</th>
               </tr>
             </thead>
             <tbody>
-              {cbFiltered.length === 0 && <tr><td colSpan={11} style={{ padding: 20, textAlign: "center", color: C.sub }}>No records match your filters.</td></tr>}
               {cbFiltered.map((cb, i) => {
                 const calc = computeCB(cb, motherBatches);
                 return (
-                  <tr key={cb.id} style={{ background: i % 2 === 0 ? C.white : C.paleBg, borderBottom: `1px solid ${C.line}` }}>
-                    <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>{fmtDate(cb.date)}</td>
-                    <td style={{ padding: "9px 12px", fontWeight: 700 }}>{cb.id}</td>
-                    <td style={{ padding: "9px 12px" }}><DeptTag dept={cb.dept} /></td>
-                    <td style={{ padding: "9px 12px" }}>{cb.productName}</td>
-                    <td style={{ padding: "9px 12px" }}>{cb.batchNumber}</td>
-                    <td style={{ padding: "9px 12px" }}>{cb.mbId}</td>
-                    <td style={{ padding: "9px 12px" }}>{cb.loggedBy || "—"}</td>
-                    <td style={{ padding: "9px 12px" }}>{fmtNum(cb.packedQty)}</td>
-                    <td style={{ padding: "9px 12px" }}>{fmtNum(cb.dispatchQty)}</td>
-                    <td style={{ padding: "9px 12px" }}><YieldBadge value={calc.finalYield} /></td>
-                    <td style={{ padding: "9px 12px" }}><StatusPill status={cb.qaStatus} /></td>
+                  <tr key={cb.id} style={{ borderBottom: `1px solid ${C.line}`, background: i % 2 === 0 ? C.white : C.paleBg }}>
+                    <td style={{ padding: 8 }}>{fmtDate(cb.date)}</td>
+                    <td style={{ padding: 8, fontWeight: 700 }}>{cb.id}</td>
+                    <td style={{ padding: 8 }}>{cb.productName}</td>
+                    <td style={{ padding: 8 }}>{cb.batchNumber}</td>
+                    <td style={{ padding: 8 }}>{fmtNum(cb.packedQty)}</td>
+                    <td style={{ padding: 8 }}>{fmtNum(cb.dispatchQty)}</td>
+                    <td style={{ padding: 8 }}><YieldBadge value={calc.pkgYield} /></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -1325,7 +1526,7 @@ function PlantRegister({ motherBatches, commercialBatches, onBack }) {
 // ROOT APP
 // ============================================================================
 function App() {
-  const [step, setStep] = useState("role"); // role -> department -> screen
+  const [step, setStep] = useState("role");
   const [role, setRole] = useState(null);
   const [dept, setDept] = useState(null);
   const [userName, setUserName] = useState("");
@@ -1335,19 +1536,6 @@ function App() {
   const [commercialBatches, setCommercialBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [storageStatus, setStorageStatus] = useState("connected");
-  const [storageSelfTestFailed, setStorageSelfTestFailed] = useState(false);
-
-  useEffect(() => {
-    // one-time self-test: confirm this session can actually write to shared storage
-    (async () => {
-      const testVal = { ping: Date.now() };
-      const result = await saveShared("dpyms_selftest", testVal);
-      if (!result.ok) {
-        console.error("Storage self-test failed:", result.error);
-        setStorageSelfTestFailed(true);
-      }
-    })();
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -1359,20 +1547,6 @@ function App() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (step !== "screen") return;
-    const interval = setInterval(async () => {
-      if (storageStatus === "saving" || storageStatus === "error") return; // don't refresh if writes aren't working
-      const mb = await loadShared("dpyms_mother_batches", motherBatches);
-      const cb = await loadShared("dpyms_commercial_batches", commercialBatches);
-      // safety: never let a poll result that has FEWER records silently erase local data
-      if (mb.length >= motherBatches.length) setMotherBatches(sortNewestFirst(mb));
-      if (cb.length >= commercialBatches.length) setCommercialBatches(sortNewestFirst(cb));
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [step, storageStatus]); // eslint-disable-line
-
-  // Role selection: managers skip department picking entirely. Production/Packaging pick a department next.
   const pickRole = (r) => {
     setRole(r);
     if (r === "manager") setStep("screen");
@@ -1385,20 +1559,25 @@ function App() {
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.paleBg, fontFamily: FONT_BODY, color: C.sub }}>
-        Loading DPYMS…
+        Loading DPYMS v2…
       </div>
     );
   }
 
-  if (step === "role") return <RolePicker onPick={pickRole} storageWarning={storageSelfTestFailed} />;
+  if (step === "role") return <RolePicker onPick={pickRole} />;
 
-  const roleLabel = role === "production" ? "Production" : role === "packaging" ? "Packaging / QA" : "Manager Dashboard";
+  const roleLabels = {
+    production: "Production",
+    qa: "Quality Assurance (QA)",
+    packaging: "Packaging",
+    manager: "Manager Dashboard",
+  };
+  const roleLabel = roleLabels[role] || role;
 
   if (step === "department") {
     return <DepartmentPicker onPick={pickDept} onBack={goHome} />;
   }
 
-  // step === "screen"
   const deptLabel = dept ? DEPARTMENTS[dept].label : null;
 
   return (
@@ -1427,6 +1606,14 @@ function App() {
           storageStatus={storageStatus} setStorageStatus={setStorageStatus}
         />
       )}
+      {role === "qa" && (
+        <QaScreen
+          dept={dept} userName={userName}
+          motherBatches={motherBatches} setMotherBatches={setMotherBatches}
+          commercialBatches={commercialBatches} setCommercialBatches={setCommercialBatches}
+          storageStatus={storageStatus} setStorageStatus={setStorageStatus}
+        />
+      )}
       {role === "packaging" && (
         <PackagingScreen
           dept={dept} userName={userName} setUserName={setUserName}
@@ -1435,14 +1622,12 @@ function App() {
           storageStatus={storageStatus} setStorageStatus={setStorageStatus}
         />
       )}
-      <div style={{ textAlign: "center", padding: "18px 16px 30px", fontSize: 10.5, color: C.sub }}>
+      <div style={{ textAlign: "center", padding: "18px 16px 30px", fontSize: 11, color: C.sub }} className="no-print">
         Danish Health Care (P) Ltd. · 76/27-29, Industrial Estate, Maxi Road, Ujjain 456010 · ISO 9001:2015 &amp; WHO GMP Certified
       </div>
     </div>
   );
 }
 
-
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
-
