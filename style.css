@@ -25,11 +25,12 @@ input, select, button, textarea {
 }
 
 .brand-header-logo {
-  max-height: 48px;
+  max-height: 54px;
   width: auto;
   object-fit: contain;
 }
 
+/* Product Photo Cropping - Ultra Clean & Focused */
 .product-thumb {
   width: 44px;
   height: 44px;
@@ -37,16 +38,24 @@ input, select, button, textarea {
   object-fit: cover;
   border: 1px solid #DCE4F0;
   background-color: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .product-card-img {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
   object-fit: cover;
   border: 1px solid #DCE4F0;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+  background-color: #FFFFFF;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(14, 42, 94, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.product-card-img:hover {
+  transform: scale(1.04);
 }
 
 /* Universal Action Bar & Navigation Buttons */
@@ -99,6 +108,16 @@ input, select, button, textarea {
 
 .btn-update {
   background: linear-gradient(135deg, #0E2A5E 0%, #081B40 100%);
+  color: #FFFFFF;
+}
+
+.btn-delete {
+  background: #FDE3E3;
+  color: #B00020;
+  border: 1px solid #F8B4B4;
+}
+.btn-delete:hover {
+  background: #B00020;
   color: #FFFFFF;
 }
 
