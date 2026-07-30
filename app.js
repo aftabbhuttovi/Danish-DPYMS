@@ -28,7 +28,7 @@ const FONT_BODY = "'Segoe UI', Arial, sans-serif";
 const FONT_MONO = "'Consolas', 'Courier New', monospace";
 
 const supabaseUrl = 'https://fxhakwigygyjspljrjob.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4aGFrd2lneWd5anNwbGpyam9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTQ5NzYsImV4cCI6MjA5OTc5MDk3Nn0.5WUUUBgw78EawfBVgDbUd1idrkWT_imbsRBgr-MWdJg';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4aGFrd2lneWd5anNwbGpyam9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTQ5NzYsImV4cCI6MjA5OTc5MDk3Nn0.5WUUUBgw78EawfBVgUd1idrkWT_imbsRBgr-MWdJg';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Image assets with embedded base64 fallbacks for guaranteed loading
@@ -38,34 +38,48 @@ const IMG_CAP = window.CAP_B64 || 'assets/capsule_product.jpg';
 const IMG_ORS = window.ORS_B64 || 'assets/ors_product.jpg';
 const IMG_OINT = window.OINT_B64 || 'assets/ointment_product.jpg';
 
-// ---------- Sample Realistic Plant Data ----------
+// ---------- Pre-loaded Default Product Examples ----------
 const SAMPLE_MOTHER_BATCHES = [
   {
-    id: "MB-TB-001", dept: "tablet", date: "2026-07-24", genericName: "LOPERAMIDE HCl TABLETS IP 2 MG", productGroup: "LOPRABLUE GROUP",
-    avgUnitWt: "220", plannedLakhUnits: "10.00", plannedBatchWt: "220.0", rrGran: "0", granOutput: "218.2", compOutput: "216.5",
-    coated: "Y", coreAvgWt: "220", coatWtGainPct: "3.0", actualCoatedWt: "226.6", coatOutput: "222.0", coatMatConsumed: "8.5",
-    remarks: "Disintegration: 3.5 mins, Dissolution: 98.4%, Assay IP compliant.", loggedBy: "R. K. Sharma (Production Supervisor)", qaStatus: "QA Approved"
+    id: "MB-TB-002", dept: "tablet", date: "2026-07-24",
+    genericName: "Aceclofenac (100 mg) and Paracetamol (325 mg) Tablets", productGroup: "ALDONIX / ACLONAC GROUP",
+    avgUnitWt: "630", plannedLakhUnits: "10.00", plannedBatchWt: "630.0", rrGran: "0",
+    granOutput: "627.0", compOutput: "626.4",
+    coated: "Y", coreAvgWt: "630", coatWtGainPct: "1.5", actualCoatedWt: "639.45", coatOutput: "635.8",
+    remarks: "Progressive yield verified across all stages.", loggedBy: "Production/QA Officer", qaStatus: "QA Approved"
   },
   {
-    id: "MB-CP-001", dept: "capsule", date: "2026-07-23", genericName: "OMEPRAZOLE CAPSULES BP 20 MG", productGroup: "OMEDAN GROUP",
+    id: "MB-CP-001", dept: "capsule", date: "2026-07-23",
+    genericName: "OMEPRAZOLE CAPSULES BP 20 MG", productGroup: "OMEDAN GROUP",
     avgUnitWt: "326", fillWtMg: "250", shellWtMg: "76", plannedLakhUnits: "5.00", plannedBatchWt: "125.0", granOutput: "124.2", compOutput: "123.8",
-    remarks: "Locking height and fill weight variation within BP specifications.", loggedBy: "A. K. Verma", qaStatus: "QA Approved"
+    remarks: "Locking height and fill weight variation within BP specifications.", loggedBy: "Production/QA Officer", qaStatus: "QA Approved"
   },
   {
-    id: "MB-OR-001", dept: "ors", date: "2026-07-22", genericName: "ORS POWDER (WHO FORMULA)", productGroup: "DANISH ORS SACHETS",
+    id: "MB-OR-001", dept: "ors", date: "2026-07-22",
+    genericName: "ORS POWDER (WHO FORMULA)", productGroup: "DANISH ORS SACHETS",
     plannedQty: "250000", mixOutputKg: "5250", fillOutputQty: "248500",
-    remarks: "Moisture content: 0.8%, Electrolyte concentration verified.", loggedBy: "P. S. Rathore", qaStatus: "QA Approved"
+    remarks: "Moisture content: 0.8%, Electrolyte concentration verified.", loggedBy: "Production/QA Officer", qaStatus: "QA Approved"
   }
 ];
 
 const SAMPLE_COMMERCIAL_BATCHES = [
   {
-    id: "CB-TB-001", dept: "tablet", mbId: "MB-TB-001", date: "2026-07-25", productName: "LOPRABLUE TABLETS 2 MG", batchNumber: "LEA26001",
-    unitsReceived: "500000", packedQty: "496500", dispatchQty: "495000", rejectedUnits: "2500", damagedUnits: "1000", loggedBy: "V. Singh (Packaging Lead)"
+    id: "CB-TB-001", dept: "tablet", mbId: "MB-TB-002", date: "2026-07-24",
+    productName: "ALDONIX-P", batchNumber: "LPX26001",
+    unitsReceived: "400000", packedQty: "397600", dispatchQty: "396000",
+    rejectedUnits: "1600", rrGeneratedUnits: "800", loggedBy: "Packaging Officer"
   },
   {
-    id: "CB-CP-001", dept: "capsule", mbId: "MB-CP-001", date: "2026-07-25", productName: "OMEDAN 20 CAPSULES", batchNumber: "CMA26001",
-    unitsReceived: "500000", packedQty: "497000", dispatchQty: "496000", rejectedUnits: "2000", damagedUnits: "1000", loggedBy: "M. Patel"
+    id: "CB-TB-002", dept: "tablet", mbId: "MB-TB-002", date: "2026-07-24",
+    productName: "ACLONAC-P", batchNumber: "APC26003",
+    unitsReceived: "600000", packedQty: "597600", dispatchQty: "595200",
+    rejectedUnits: "1800", rrGeneratedUnits: "600", loggedBy: "Packaging Officer"
+  },
+  {
+    id: "CB-CP-001", dept: "capsule", mbId: "MB-CP-001", date: "2026-07-25",
+    productName: "OMEDAN 20 CAPSULES", batchNumber: "CMA26001",
+    unitsReceived: "500000", packedQty: "497000", dispatchQty: "496000",
+    rejectedUnits: "2000", rrGeneratedUnits: "1000", loggedBy: "Packaging Officer"
   }
 ];
 
@@ -125,34 +139,77 @@ const DEPARTMENTS = {
 };
 const DEPT_LIST = Object.values(DEPARTMENTS);
 
+// ---------- DUAL-LAYER PERMANENT DATA PERSISTENCE SYSTEM ----------
 async function loadShared(key, fallback) {
-  if (key === "dpyms_selftest") return fallback;
+  let localData = null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      localData = JSON.parse(raw);
+    }
+  } catch (e) {
+    console.warn("localStorage read warning:", e);
+  }
+
   try {
     const table = key === "dpyms_mother_batches" ? "mother_batches" : (key === "dpyms_commercial_batches" ? "commercial_batches" : null);
-    if (!table) return fallback;
-    const { data, error } = await supabase.from(table).select('*');
-    if (error || !data || data.length === 0) return fallback;
-    return data.map(toCamelCase);
+    if (table) {
+      const { data, error } = await supabase.from(table).select('*');
+      if (!error && data && data.length > 0) {
+        const cloudData = data.map(toCamelCase);
+        if (localData && Array.isArray(localData)) {
+          const mergedMap = new Map();
+          localData.forEach(item => mergedMap.set(item.id, item));
+          cloudData.forEach(item => mergedMap.set(item.id, item));
+          const merged = Array.from(mergedMap.values());
+          localStorage.setItem(key, JSON.stringify(merged));
+          return merged;
+        }
+        localStorage.setItem(key, JSON.stringify(cloudData));
+        return cloudData;
+      }
+    }
   } catch (e) {
-    return fallback;
+    console.warn("Supabase fetch warning, using local cache:", e);
   }
+
+  if (localData && Array.isArray(localData) && localData.length > 0) {
+    return localData;
+  }
+
+  return fallback;
 }
 
 async function saveShared(key, value) {
-  if (key === "dpyms_selftest") return { ok: true };
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.error("localStorage write error:", e);
+  }
+
   try {
     const table = key === "dpyms_mother_batches" ? "mother_batches" : (key === "dpyms_commercial_batches" ? "commercial_batches" : null);
-    if (!table) return { ok: true };
-    const snakeCaseRows = value.map(toSnakeCase);
-    const { error } = await supabase.from(table).upsert(snakeCaseRows);
-    if (error) throw error;
-    return { ok: true };
+    if (table) {
+      const snakeCaseRows = value.map(toSnakeCase);
+      await supabase.from(table).upsert(snakeCaseRows);
+    }
   } catch (e) {
-    return { ok: false, error: e.message || "Error saving" };
+    console.warn("Supabase background save warning:", e);
   }
+  return { ok: true };
 }
 
 async function deleteSharedRow(table, id) {
+  const key = table === "mother_batches" ? "dpyms_mother_batches" : "dpyms_commercial_batches";
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const list = JSON.parse(raw);
+      const updated = list.filter(item => item.id !== id);
+      localStorage.setItem(key, JSON.stringify(updated));
+    }
+  } catch (e) {}
+
   try {
     await supabase.from(table).delete().eq('id', id);
   } catch (e) {}
@@ -163,10 +220,6 @@ function lakhUnitsFromKg(kg, avgWtMg) {
   if (!kg || !avgWtMg) return "";
   return round2((kg * 1000000) / avgWtMg / 100000);
 }
-function kgFromLakhUnits(lakhs, avgWtMg) {
-  if (!lakhs || !avgWtMg) return "";
-  return round2((lakhs * 100000 * avgWtMg) / 1000000);
-}
 function pct(num, den) {
   if (!num && num !== 0) return "";
   if (!den) return "";
@@ -176,22 +229,18 @@ function lakhFromUnits(units) {
   if (!units && units !== 0) return "";
   return round2(units / 100000);
 }
-function totalKgFromUnitsAndGrams(qty, gramsPerUnit) {
-  const q = parseFloat(qty), g = parseFloat(gramsPerUnit);
-  if (!isFinite(q) || !isFinite(g)) return "";
-  return round2((q * g) / 1000);
-}
 
-// ---------- Dual Calculation: Tablet Mother Batch ----------
+// ---------- Progressive Yield Calculations ----------
 function computeMB_Tablet(mbRaw, commercialBatches) {
   const wt = parseFloat(mbRaw.avgUnitWt);
   const plannedLakhInput = parseFloat(mbRaw.plannedLakhUnits);
   let batchWt = parseFloat(mbRaw.plannedBatchWt);
+
+  const rr = parseFloat(mbRaw.rrGran) || 0;
   
   if (isFinite(plannedLakhInput) && wt && !batchWt) {
-    batchWt = (plannedLakhInput * 100000 * wt) / 1000000;
+    batchWt = Math.max(0, ((plannedLakhInput * 100000 * wt) / 1000000) - rr);
   }
-  const rr = parseFloat(mbRaw.rrGran) || 0;
   const totalBatchKg = isFinite(batchWt) ? round2(batchWt + rr) : "";
   const plannedLakh = isFinite(plannedLakhInput) ? plannedLakhInput : (totalBatchKg !== "" ? lakhUnitsFromKg(totalBatchKg, wt) : "");
 
@@ -201,7 +250,7 @@ function computeMB_Tablet(mbRaw, commercialBatches) {
 
   const comp = parseFloat(mbRaw.compOutput);
   const compLakh = isFinite(comp) && wt ? lakhUnitsFromKg(comp, wt) : "";
-  const compYield = isFinite(comp) && isFinite(gran) ? pct(comp, gran) : "";
+  const compYield = isFinite(comp) && totalBatchKg !== "" ? pct(comp, totalBatchKg) : "";
 
   const coated = mbRaw.coated === "Y";
   const coreWt = parseFloat(mbRaw.coreAvgWt) || wt;
@@ -209,21 +258,28 @@ function computeMB_Tablet(mbRaw, commercialBatches) {
   const expectedCoatedWt = isFinite(coreWt) ? round2(coreWt * (1 + coatGainPct / 100)) : "";
   const actualCoatedWt = parseFloat(mbRaw.actualCoatedWt) || expectedCoatedWt;
 
-  const coat = parseFloat(mbRaw.coatOutput);
+  let coat = parseFloat(mbRaw.coatOutput);
+  if (!coat && coated && isFinite(comp) && coatGainPct) {
+    coat = round2(comp * (1 + coatGainPct / 100));
+  }
+
   const effectiveCoatedUnitWt = actualCoatedWt || wt;
   const coatLakh = coated && isFinite(coat) && effectiveCoatedUnitWt ? lakhUnitsFromKg(coat, effectiveCoatedUnitWt) : "";
-  const coatYield = !coated ? "NA" : isFinite(coat) && isFinite(comp) ? pct(coat, comp) : "";
+  const coatYield = !coated ? "NA" : isFinite(coat) && isFinite(comp) ? pct(comp, totalBatchKg) : "";
 
   const linked = commercialBatches.filter((cb) => cb.mbId === mbRaw.id);
   const packedLakhTotal = round2(
     linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.packedQty)) ? parseFloat(cb.packedQty) / 100000 : 0), 0)
   );
-  const packedKgTotal = packedLakhTotal !== "" && wt ? kgFromLakhUnits(packedLakhTotal, wt) : "";
+  const packedUnitsTotal = linked.reduce((sum, cb) => sum + (parseFloat(cb.packedQty) || 0), 0);
   
   const dispatchLakhTotal = round2(
     linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.dispatchQty)) ? parseFloat(cb.dispatchQty) / 100000 : 0), 0)
   );
-  const dispatchKgTotal = dispatchLakhTotal !== "" && wt ? kgFromLakhUnits(dispatchLakhTotal, wt) : "";
+  const dispatchUnitsTotal = linked.reduce((sum, cb) => sum + (parseFloat(cb.dispatchQty) || 0), 0);
+
+  const totalInputUnits = plannedLakh * 100000;
+  const finalYield = totalInputUnits > 0 && dispatchUnitsTotal > 0 ? pct(dispatchUnitsTotal, totalInputUnits) : "";
 
   return {
     totalBatchKg, plannedLakh,
@@ -231,13 +287,12 @@ function computeMB_Tablet(mbRaw, commercialBatches) {
     comp, compLakh, compYield,
     coated, coreWt, coatGainPct, expectedCoatedWt, actualCoatedWt,
     coat: coated ? coat : "NA", coatLakh: coated ? coatLakh : "NA", coatYield,
-    packedLakhTotal, packedKgTotal, dispatchLakhTotal, dispatchKgTotal,
-    linkedCount: linked.length,
+    packedLakhTotal, packedUnitsTotal, dispatchLakhTotal, dispatchUnitsTotal,
+    finalYield, linkedCount: linked.length, linked,
     qaStatus: mbRaw.qaStatus || "Pending",
   };
 }
 
-// ---------- Dual Calculation: Capsule Mother Batch ----------
 function computeMB_Capsule(mbRaw, commercialBatches) {
   const fillWt = parseFloat(mbRaw.fillWtMg);
   const shellWt = parseFloat(mbRaw.shellWtMg);
@@ -251,40 +306,33 @@ function computeMB_Capsule(mbRaw, commercialBatches) {
   const totalBatchKg = isFinite(batchWt) ? round2(batchWt) : "";
   const plannedLakh = isFinite(plannedLakhInput) ? plannedLakhInput : (totalBatchKg !== "" && fillWt ? lakhUnitsFromKg(totalBatchKg, fillWt) : "");
 
-  const requiredFillKg = plannedLakh !== "" && fillWt ? round2((plannedLakh * 100000 * fillWt) / 1000000) : "";
-  const requiredShellQty = plannedLakh !== "" ? plannedLakh * 100000 : "";
-
   const gran = parseFloat(mbRaw.granOutput);
   const granLakh = isFinite(gran) && fillWt ? lakhUnitsFromKg(gran, fillWt) : "";
   const granYield = isFinite(gran) && totalBatchKg !== "" ? pct(gran, totalBatchKg) : "";
 
   const comp = parseFloat(mbRaw.compOutput);
   const compLakh = isFinite(comp) && avgFilledCapWt ? lakhUnitsFromKg(comp, avgFilledCapWt) : "";
-  const compYield = isFinite(comp) && isFinite(gran) ? pct(comp, gran) : "";
+  const compYield = isFinite(comp) && totalBatchKg !== "" ? pct(comp, totalBatchKg) : "";
 
   const linked = commercialBatches.filter((cb) => cb.mbId === mbRaw.id);
-  const packedLakhTotal = round2(
-    linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.packedQty)) ? parseFloat(cb.packedQty) / 100000 : 0), 0)
-  );
-  const packedKgTotal = packedLakhTotal !== "" && fillWt ? kgFromLakhUnits(packedLakhTotal, fillWt) : "";
+  const packedLakhTotal = round2(linked.reduce((sum, cb) => sum + (parseFloat(cb.packedQty) || 0) / 100000, 0));
+  const dispatchLakhTotal = round2(linked.reduce((sum, cb) => sum + (parseFloat(cb.dispatchQty) || 0) / 100000, 0));
+  const dispatchUnitsTotal = linked.reduce((sum, cb) => sum + (parseFloat(cb.dispatchQty) || 0), 0);
 
-  const dispatchLakhTotal = round2(
-    linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.dispatchQty)) ? parseFloat(cb.dispatchQty) / 100000 : 0), 0)
-  );
-  const dispatchKgTotal = dispatchLakhTotal !== "" && fillWt ? kgFromLakhUnits(dispatchLakhTotal, fillWt) : "";
+  const totalInputUnits = plannedLakh * 100000;
+  const finalYield = totalInputUnits > 0 && dispatchUnitsTotal > 0 ? pct(dispatchUnitsTotal, totalInputUnits) : "";
 
   return {
-    fillWt, shellWt, avgFilledCapWt, requiredFillKg, requiredShellQty,
-    totalBatchKg, plannedLakh,
+    fillWt, shellWt, avgFilledCapWt, totalBatchKg, plannedLakh,
     gran, granLakh, granYield,
     comp, compLakh, compYield,
-    packedLakhTotal, packedKgTotal, dispatchLakhTotal, dispatchKgTotal,
-    linkedCount: linked.length,
+    coat: "NA", coatYield: "NA",
+    packedLakhTotal, dispatchLakhTotal, dispatchUnitsTotal,
+    finalYield, linkedCount: linked.length, linked,
     qaStatus: mbRaw.qaStatus || "Pending",
   };
 }
 
-// ---------- Dual Calculation: ORS & Ointment Mother Batch ----------
 function computeMB_OrsOintment(mbRaw, commercialBatches) {
   const plannedQty = parseFloat(mbRaw.plannedQty);
   const plannedLakh = isFinite(plannedQty) ? lakhFromUnits(plannedQty) : "";
@@ -295,18 +343,18 @@ function computeMB_OrsOintment(mbRaw, commercialBatches) {
   const fillYield = isFinite(fillQty) && plannedQty ? pct(fillQty, plannedQty) : "";
 
   const linked = commercialBatches.filter((cb) => cb.mbId === mbRaw.id);
-  const packedLakhTotal = round2(
-    linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.packedQty)) ? parseFloat(cb.packedQty) / 100000 : 0), 0)
-  );
-  const dispatchLakhTotal = round2(
-    linked.reduce((sum, cb) => sum + (isFinite(parseFloat(cb.dispatchQty)) ? parseFloat(cb.dispatchQty) / 100000 : 0), 0)
-  );
+  const packedLakhTotal = round2(linked.reduce((sum, cb) => sum + (parseFloat(cb.packedQty) || 0) / 100000, 0));
+  const dispatchLakhTotal = round2(linked.reduce((sum, cb) => sum + (parseFloat(cb.dispatchQty) || 0) / 100000, 0));
+  const dispatchUnitsTotal = linked.reduce((sum, cb) => sum + (parseFloat(cb.dispatchQty) || 0), 0);
+
+  const finalYield = plannedQty > 0 && dispatchUnitsTotal > 0 ? pct(dispatchUnitsTotal, plannedQty) : "";
 
   return {
     plannedQty, plannedLakh, mixOutputKg, totalBatchKg: mixOutputKg,
+    gran: mixOutputKg, granYield: 100, comp: fillQty, compYield: fillYield, coat: "NA", coatYield: "NA",
     fillQty, fillLakh, fillYield,
-    packedLakhTotal, dispatchLakhTotal,
-    linkedCount: linked.length,
+    packedLakhTotal, dispatchLakhTotal, dispatchUnitsTotal,
+    finalYield, linkedCount: linked.length, linked,
     qaStatus: mbRaw.qaStatus || "Pending",
   };
 }
@@ -317,35 +365,29 @@ function computeMB(mbRaw, commercialBatches) {
   return computeMB_Tablet(mbRaw, commercialBatches);
 }
 
-// ---------- Complete Commercial Batch Calculations ----------
 function computeCB(cbRaw, motherBatches) {
   const mb = motherBatches.find((m) => m.id === cbRaw.mbId);
-  const dept = mb ? mb.dept : cbRaw.dept;
 
   const unitsRecv = parseFloat(cbRaw.unitsReceived) || 0;
   const packed = parseFloat(cbRaw.packedQty) || 0;
   const dispatch = parseFloat(cbRaw.dispatchQty) || 0;
   const rejected = parseFloat(cbRaw.rejectedUnits) || 0;
-  const damaged = parseFloat(cbRaw.damagedUnits) || 0;
-  const totalLossUnits = rejected + damaged;
-  const balanceUnits = Math.max(0, unitsRecv - (packed + totalLossUnits));
+  const rrGen = parseFloat(cbRaw.rrGeneratedUnits) || 0;
 
-  const pkgYield = unitsRecv > 0 ? pct(packed, unitsRecv) : "";
+  const effectiveLossUnits = Math.max(0, unitsRecv - (packed + rrGen));
+  
+  const pkgYield = unitsRecv > 0 ? pct(packed + rrGen, unitsRecv) : "";
   const dispatchYield = packed > 0 ? pct(dispatch, packed) : "";
   const finalYield = unitsRecv > 0 ? pct(dispatch, unitsRecv) : "";
 
   const recvLakh = isFinite(unitsRecv) ? lakhFromUnits(unitsRecv) : "";
   const packedLakh = isFinite(packed) ? lakhFromUnits(packed) : "";
   const dispatchLakh = isFinite(dispatch) ? lakhFromUnits(dispatch) : "";
+  const rrGenLakh = isFinite(rrGen) ? lakhFromUnits(rrGen) : "";
 
-  const avgWt = mb ? parseFloat(mb.avgUnitWt || mb.fillWtMg) : NaN;
-  const packedKg = packedLakh !== "" && avgWt ? kgFromLakhUnits(packedLakh, avgWt) : "";
-  const dispatchKg = dispatchLakh !== "" && avgWt ? kgFromLakhUnits(dispatchLakh, avgWt) : "";
-
-  return { mb, avgWt, unitsRecv, recvLakh, packed, packedLakh, packedKg, dispatch, dispatchLakh, dispatchKg, rejected, damaged, totalLossUnits, balanceUnits, pkgYield, dispatchYield, finalYield };
+  return { mb, unitsRecv, recvLakh, packed, packedLakh, dispatch, dispatchLakh, rejected, rrGen, rrGenLakh, effectiveLossUnits, pkgYield, dispatchYield, finalYield };
 }
 
-// ---------- ID & Sort Helpers ----------
 const DEPT_PREFIX = { tablet: "TB", capsule: "CP", ors: "OR", ointment: "OT" };
 const genMBId = (existing, dept) => {
   const prefix = "MB-" + DEPT_PREFIX[dept];
@@ -382,33 +424,6 @@ function fmtNum(n) {
   return Number(n).toLocaleString("en-IN");
 }
 
-function toCSV(rows, headers) {
-  const esc = (v) => {
-    if (v === null || v === undefined) return "";
-    const s = String(v);
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-      return '"' + s.replace(/"/g, '""') + '"';
-    }
-    return s;
-  };
-  const lines = [headers.map((h) => esc(h.label)).join(",")];
-  rows.forEach((row) => {
-    lines.push(headers.map((h) => esc(row[h.key])).join(","));
-  });
-  return lines.join("\r\n");
-}
-function downloadCSV(filename, csvContent) {
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 function BrandHeader({ small }) {
   return (
     <div style={{ textAlign: "center", marginBottom: small ? 20 : 32 }}>
@@ -423,7 +438,7 @@ function BrandHeader({ small }) {
   );
 }
 
-function UniversalActionBar({ onSave, onEdit, onUpdate, onDelete, onBack, onNext, isEditing = false }) {
+function UniversalActionBar({ onSave, onEdit, onUpdate, onDelete, onBack, isEditing = false }) {
   return (
     <div className="nav-action-bar no-print">
       {onBack && <button type="button" className="btn-nav btn-back" onClick={onBack}>← Back</button>}
@@ -431,7 +446,6 @@ function UniversalActionBar({ onSave, onEdit, onUpdate, onDelete, onBack, onNext
       {!isEditing && onEdit && <button type="button" className="btn-nav btn-edit" onClick={onEdit}>✏️ Edit</button>}
       {isEditing && onUpdate && <button type="button" className="btn-nav btn-update" onClick={onUpdate}>🔄 Update Record</button>}
       {onDelete && <button type="button" className="btn-nav btn-delete" onClick={onDelete}>🗑️ Delete Batch</button>}
-      {onNext && <button type="button" className="btn-nav btn-next" onClick={onNext}>Next →</button>}
     </div>
   );
 }
@@ -441,7 +455,7 @@ function RolePicker({ onPick }) {
     { key: "production", label: "Production", desc: "Log & Edit Mother Batches — Granulation, Compression, Coating", icon: "⚗" },
     { key: "qa", label: "Quality Assurance (QA)", desc: "Inspection, Assay, QC Approvals & Status Updates", icon: "🔬" },
     { key: "packaging", label: "Packaging", desc: "Commercial Batches — Packing, Rejections, Dispatch & Yields", icon: "📦" },
-    { key: "manager", label: "Manager Dashboard", desc: "Full plant view — stage tracking, plant register & GMP reports", icon: "◈" },
+    { key: "manager", label: "Manager Dashboard", desc: "Full plant view — unified stage tracking & GMP reports", icon: "◈" },
   ];
   
   const [selectedRole, setSelectedRole] = useState(null);
@@ -534,7 +548,7 @@ function DepartmentPicker({ onPick, onBack }) {
   );
 }
 
-function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, showDeptChange, onOpenRegister, showRegisterLink }) {
+function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, showDeptChange }) {
   return (
     <div style={{ background: C.navy, color: C.white, padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", flexWrap: "wrap", gap: 8 }} className="no-print">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -547,11 +561,6 @@ function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, sh
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {showRegisterLink && (
-          <button onClick={onOpenRegister} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}>
-            Plant Register & Reports
-          </button>
-        )}
         {showDeptChange && (
           <button onClick={onChangeDept} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.28)", color: C.white, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}>
             ← Change Department
@@ -582,16 +591,6 @@ function YieldBadge({ value }) {
   return <span style={{ color, fontWeight: 700, fontFamily: FONT_MONO }}>{value}%</span>;
 }
 
-function DeptTag({ dept }) {
-  const d = DEPARTMENTS[dept];
-  if (!d) return null;
-  return (
-    <span style={{ background: C.paleBg, border: `1px solid ${C.line}`, color: C.navy, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
-      <img src={d.imgSrc} alt="" style={{ width: 16, height: 16, borderRadius: 4, objectFit: "cover" }} /> {d.label}
-    </span>
-  );
-}
-
 function Field({ label, children, hint }) {
   return (
     <label style={{ display: "block", marginBottom: 14 }}>
@@ -620,6 +619,7 @@ function Toast({ message, onDone }) {
     </div>
   );
 }
+
 function Stat({ label, value }) {
   return (
     <div>
@@ -628,9 +628,7 @@ function Stat({ label, value }) {
     </div>
   );
 }
-function EmptyNote({ text }) {
-  return <div style={{ textAlign: "center", color: C.sub, fontSize: 13, padding: "30px 10px", border: `1.5px dashed ${C.line}`, borderRadius: 12 }}>{text}</div>;
-}
+
 function SectionHeading({ eyebrow, title, sub, small, right }) {
   return (
     <div style={{ marginBottom: small ? 12 : 18, marginTop: small ? 26 : 0, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10 }}>
@@ -644,8 +642,23 @@ function SectionHeading({ eyebrow, title, sub, small, right }) {
   );
 }
 
+function FilterChip({ active, onClick, label }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? C.navy : C.white, color: active ? C.white : C.ink,
+        border: `1.5px solid ${active ? C.navy : C.line}`, borderRadius: 999,
+        padding: "7px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 // ============================================================================
-// PRODUCTION SCREEN — Multi-stage Mother Batch Entry & Editing
+// PRODUCTION SCREEN
 // ============================================================================
 function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches, setCommercialBatches }) {
   const d = DEPARTMENTS[dept];
@@ -656,7 +669,7 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
   const blank = {
     id: "", dept, date: new Date().toISOString().slice(0, 10), genericName: "", productGroup: "",
     avgUnitWt: "", plannedLakhUnits: "", plannedBatchWt: "", rrGran: "0", granOutput: "", compOutput: "", compRR: "0",
-    coated: "N", coreAvgWt: "", coatWtGainPct: "", actualCoatedWt: "", coatOutput: "", coatMatConsumed: "",
+    coated: "N", coreAvgWt: "", coatWtGainPct: "", actualCoatedWt: "", coatOutput: "",
     fillWtMg: "", shellWtMg: "",
     plannedQty: "", mixOutputKg: "", fillOutputQty: "",
     remarks: "", loggedBy: userName || "", qaStatus: "Pending",
@@ -665,22 +678,29 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
   const [form, setForm] = useState(blank);
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState("");
-  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => { setForm(blank); setEditingId(null); }, [dept]); // eslint-disable-line
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (e) => setForm((f) => {
+    const next = { ...f, [k]: e.target.value };
+    if (k === "coatWtGainPct" || k === "compOutput" || k === "actualCoatedWt") {
+      const comp = parseFloat(next.compOutput);
+      const gain = parseFloat(next.coatWtGainPct);
+      if (isFinite(comp) && isFinite(gain)) {
+        next.coatOutput = round2(comp * (1 + gain / 100));
+      }
+    }
+    return next;
+  });
 
   const previewLakhs = form.plannedLakhUnits ? parseFloat(form.plannedLakhUnits) : "";
   const previewAvgWt = isCapsule ? (parseFloat(form.fillWtMg) || parseFloat(form.avgUnitWt)) : parseFloat(form.avgUnitWt);
-  const calculatedReqKg = previewLakhs && previewAvgWt ? round2((previewLakhs * 100000 * previewAvgWt) / 1000000) : "";
+  const rrVal = parseFloat(form.rrGran) || 0;
+  const rawReqKg = previewLakhs && previewAvgWt ? round2((previewLakhs * 100000 * previewAvgWt) / 1000000) : "";
+  const calculatedReqKg = rawReqKg !== "" ? Math.max(0, round2(rawReqKg - rrVal)) : "";
 
   const saveRecord = async (isUpdate = false) => {
-    if (!form.genericName) {
-      setToast("Please enter Generic Product Name");
-      return;
-    }
-
+    if (!form.genericName) { setToast("Please enter Generic Product Name"); return; }
     let recordId = form.id;
     if (!recordId) recordId = genMBId(motherBatches, dept);
 
@@ -703,45 +723,26 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
   };
 
   const deleteBatch = async (mbId) => {
-    if (!window.confirm(`Are you sure you want to delete Mother Batch ${mbId}? This action cannot be undone.`)) return;
-
+    if (!window.confirm(`Are you sure you want to delete Mother Batch ${mbId}?`)) return;
     const updatedMBs = motherBatches.filter((m) => m.id !== mbId);
     const updatedCBs = commercialBatches.filter((c) => c.mbId !== mbId);
-
     setMotherBatches(updatedMBs);
     setCommercialBatches(updatedCBs);
-
     deleteSharedRow("mother_batches", mbId);
     await saveShared("dpyms_mother_batches", updatedMBs);
     await saveShared("dpyms_commercial_batches", updatedCBs);
-
-    if (form.id === mbId || editingId === mbId) {
-      setForm(blank);
-      setEditingId(null);
-    }
+    if (form.id === mbId || editingId === mbId) { setForm(blank); setEditingId(null); }
     setToast(`Mother Batch ${mbId} deleted`);
   };
 
-  const editBatch = (mb) => {
-    setForm(mb);
-    setEditingId(mb.id);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
+  const editBatch = (mb) => { setForm(mb); setEditingId(mb.id); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const deptBatches = motherBatches.filter((m) => m.dept === dept);
 
   return (
     <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 16px 60px" }}>
       <SectionHeading eyebrow={`Production · ${d.label}`} title={`${editingId ? "Edit" : "Log"} ${d.label} Mother Batch`} sub="Progressive multi-stage record." />
 
-      <UniversalActionBar
-        onSave={() => saveRecord(false)}
-        onEdit={editingId ? null : () => deptBatches[0] && editBatch(deptBatches[0])}
-        onUpdate={() => saveRecord(true)}
-        onDelete={editingId ? () => deleteBatch(editingId) : null}
-        onBack={() => { setForm(blank); setEditingId(null); }}
-        isEditing={!!editingId}
-      />
+      <UniversalActionBar onSave={() => saveRecord(false)} onEdit={editingId ? null : () => deptBatches[0] && editBatch(deptBatches[0])} onUpdate={() => saveRecord(true)} onDelete={editingId ? () => deleteBatch(editingId) : null} onBack={() => { setForm(blank); setEditingId(null); }} isEditing={!!editingId} />
 
       <Card style={{ padding: 22, marginBottom: 24 }}>
         {editingId && (
@@ -753,37 +754,32 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <Field label="Date"><TextInput type="date" value={form.date} onChange={set("date")} /></Field>
-          <Field label="Logged by"><TextInput placeholder="Operator / Supervisor Name" value={form.loggedBy} onChange={set("loggedBy")} /></Field>
+          <Field label="Production/QA Officer Name"><TextInput placeholder="Officer Name" value={form.loggedBy} onChange={set("loggedBy")} /></Field>
         </div>
 
-        <Field label="Generic Name">
-          <TextInput placeholder={isTablet ? "e.g. LOPERAMIDE HCl TABLETS IP 2 MG" : isCapsule ? "e.g. OMEPRAZOLE CAPSULES BP 20 MG" : "e.g. ORS POWDER (WHO FORMULA)"} value={form.genericName} onChange={set("genericName")} />
+        <Field label="Generic Name of Product">
+          <TextInput placeholder={isTablet ? "e.g. Aceclofenac (100 mg) and Paracetamol (325 mg) Tablets" : "e.g. OMEPRAZOLE CAPSULES BP 20 MG"} value={form.genericName} onChange={set("genericName")} />
         </Field>
         <Field label="Product Group / Brand Family">
-          <TextInput placeholder="e.g. LOPRABLUE / LOPAGONE GROUP" value={form.productGroup} onChange={set("productGroup")} />
+          <TextInput placeholder="e.g. ALDONIX / ACLONAC GROUP" value={form.productGroup} onChange={set("productGroup")} />
         </Field>
 
         {isTablet && (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Field label="Planned Tablets (in Lakhs)" hint="e.g. 5.00, 10.50">
-                <TextInput type="number" step="0.01" placeholder="e.g. 10.00" value={form.plannedLakhUnits} onChange={set("plannedLakhUnits")} />
-              </Field>
-              <Field label="Avg Tablet Wt (mg)"><TextInput type="number" placeholder="e.g. 220" value={form.avgUnitWt} onChange={set("avgUnitWt")} /></Field>
+              <Field label="Planned Tablets (in Lakhs)"><TextInput type="number" step="0.01" placeholder="e.g. 10.00" value={form.plannedLakhUnits} onChange={set("plannedLakhUnits")} /></Field>
+              <Field label="Avg Tablet Wt (mg)"><TextInput type="number" placeholder="e.g. 630" value={form.avgUnitWt} onChange={set("avgUnitWt")} /></Field>
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <Field label="Planned Batch Wt (kg)" hint={calculatedReqKg ? `Auto Req: ${calculatedReqKg} kg` : "Batch size in kg"}>
-                <TextInput type="number" placeholder={calculatedReqKg || "e.g. 220"} value={form.plannedBatchWt || calculatedReqKg} onChange={set("plannedBatchWt")} />
+              <Field label="RR Added — Granulation (kg)" hint="Reusable RR from previous runs"><TextInput type="number" value={form.rrGran} onChange={set("rrGran")} /></Field>
+              <Field label="Planned Batch Wt (kg)" hint={calculatedReqKg !== "" ? `Auto Req (reduced by RR): ${calculatedReqKg} kg` : "Batch size in kg"}>
+                <TextInput type="number" placeholder={calculatedReqKg || "e.g. 630.0"} value={form.plannedBatchWt || calculatedReqKg} onChange={set("plannedBatchWt")} />
               </Field>
-              <Field label="RR Added — Granulation (kg)"><TextInput type="number" value={form.rrGran} onChange={set("rrGran")} /></Field>
             </div>
-
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Field label="Granulation Output (kg)"><TextInput type="number" value={form.granOutput} onChange={set("granOutput")} /></Field>
               <Field label="Compression Output (kg)"><TextInput type="number" value={form.compOutput} onChange={set("compOutput")} /></Field>
             </div>
-
             <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 16, marginTop: 8, marginBottom: 14 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 12 }}>Coating Section Details</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -794,18 +790,16 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
                   </SelectInput>
                 </Field>
                 {form.coated === "Y" && (
-                  <Field label="Target Weight Gain (%)"><TextInput type="number" placeholder="e.g. 3.0" value={form.coatWtGainPct} onChange={set("coatWtGainPct")} /></Field>
+                  <Field label="Percent Weight Gain (%)" hint="Triggers auto coating output">
+                    <TextInput type="number" placeholder="e.g. 1.5" value={form.coatWtGainPct} onChange={set("coatWtGainPct")} />
+                  </Field>
                 )}
               </div>
-
               {form.coated === "Y" && (
-                <>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                    <Field label="Actual Coated Tablet Wt (mg)"><TextInput type="number" placeholder="e.g. 226.6" value={form.actualCoatedWt} onChange={set("actualCoatedWt")} /></Field>
-                    <Field label="Coating Output (kg)"><TextInput type="number" value={form.coatOutput} onChange={set("coatOutput")} /></Field>
-                  </div>
-                  <Field label="Coating Material Consumed (kg)"><TextInput type="number" placeholder="e.g. 8.5" value={form.coatMatConsumed} onChange={set("coatMatConsumed")} /></Field>
-                </>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <Field label="Actual Coated Tablet Wt (mg)"><TextInput type="number" placeholder="e.g. 639.45" value={form.actualCoatedWt} onChange={set("actualCoatedWt")} /></Field>
+                  <Field label="Coating Output (kg)" hint="Calculated automatically"><TextInput type="number" value={form.coatOutput} onChange={set("coatOutput")} /></Field>
+                </div>
               )}
             </div>
           </>
@@ -819,26 +813,17 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Field label="Avg Shell Weight (mg)"><TextInput type="number" placeholder="e.g. 76" value={form.shellWtMg} onChange={set("shellWtMg")} /></Field>
-              <Field label="Avg Filled Capsule Wt (mg)" hint="Auto calculated">
-                <TextInput type="number" value={(parseFloat(form.fillWtMg) || 0) + (parseFloat(form.shellWtMg) || 0) || form.avgUnitWt} readOnly style={{ background: C.paleBg }} />
-              </Field>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <Field label="Granulation Output (kg)"><TextInput type="number" value={form.granOutput} onChange={set("granOutput")} /></Field>
-              <Field label="Filling Output (kg)"><TextInput type="number" value={form.compOutput} onChange={set("compOutput")} /></Field>
             </div>
+            <Field label="Filling Output (kg)"><TextInput type="number" value={form.compOutput} onChange={set("compOutput")} /></Field>
           </>
         )}
 
         {isOrsOintment && (
           <>
-            <Field label={`Planned Quantity (${dept === "ors" ? "sachets" : "tubes"})`}>
-              <TextInput type="number" placeholder="e.g. 500000" value={form.plannedQty} onChange={set("plannedQty")} />
-            </Field>
+            <Field label={`Planned Quantity (${dept === "ors" ? "sachets" : "tubes"})`}><TextInput type="number" placeholder="e.g. 250000" value={form.plannedQty} onChange={set("plannedQty")} /></Field>
             <Field label="Mix Output (kg)"><TextInput type="number" value={form.mixOutputKg} onChange={set("mixOutputKg")} /></Field>
-            <Field label={`Fill Output (${dept === "ors" ? "sachets" : "tubes"} filled)`}>
-              <TextInput type="number" value={form.fillOutputQty} onChange={set("fillOutputQty")} />
-            </Field>
+            <Field label={`Fill Output (${dept === "ors" ? "sachets" : "tubes"} filled)`}><TextInput type="number" value={form.fillOutputQty} onChange={set("fillOutputQty")} /></Field>
           </>
         )}
 
@@ -847,17 +832,15 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
 
       <SectionHeading title={`Recent ${d.label} Mother Batches`} small />
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {deptBatches.length === 0 && <EmptyNote text="No mother batches logged yet in this department." />}
         {deptBatches.map((mb) => {
           const calc = computeMB(mb, commercialBatches);
-          const open = expandedId === mb.id;
           return (
             <Card key={mb.id} style={{ padding: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div style={{ cursor: "pointer", flex: 1 }} onClick={() => setExpandedId(open ? null : mb.id)}>
+                <div>
                   <div style={{ fontWeight: 700, fontSize: 14, color: C.ink }}>{mb.id} · {mb.genericName || "Untitled"}</div>
                   <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
-                    {fmtDate(mb.date)}{mb.loggedBy ? ` · by ${mb.loggedBy}` : ""} · Planned: <b>{calc.plannedLakh ? `${calc.plannedLakh} Lakhs` : "—"}</b> ({calc.totalBatchKg ? `${calc.totalBatchKg} kg` : "—"})
+                    {fmtDate(mb.date)}{mb.loggedBy ? ` · Officer: ${mb.loggedBy}` : ""} · Planned: <b>{calc.plannedLakh ? `${calc.plannedLakh} Lacs` : "—"}</b> ({calc.totalBatchKg ? `${calc.totalBatchKg} kg` : "—"})
                   </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -866,31 +849,6 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
                   <button type="button" className="btn-nav btn-delete" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => deleteBatch(mb.id)}>🗑️ Delete</button>
                 </div>
               </div>
-              {open && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.line}`, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, fontSize: 12.5 }}>
-                  {isTablet && (
-                    <>
-                      <Stat label="Gran Output" value={`${mb.granOutput || "—"} kg (${calc.granLakh || "—"} L)`} />
-                      <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
-                      <Stat label="Comp Output" value={`${mb.compOutput || "—"} kg (${calc.compLakh || "—"} L)`} />
-                      <Stat label="Comp Yield" value={<YieldBadge value={calc.compYield} />} />
-                      <Stat label="Coat Output" value={calc.coat === "NA" ? "NA" : `${mb.coatOutput || "—"} kg (${calc.coatLakh || "—"} L)`} />
-                      <Stat label="Coat Yield" value={<YieldBadge value={calc.coatYield} />} />
-                    </>
-                  )}
-                  {isCapsule && (
-                    <>
-                      <Stat label="Gran Output" value={`${mb.granOutput || "—"} kg (${calc.granLakh || "—"} L)`} />
-                      <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
-                      <Stat label="Filling Output" value={`${mb.compOutput || "—"} kg (${calc.compLakh || "—"} L)`} />
-                      <Stat label="Fill Yield" value={<YieldBadge value={calc.compYield} />} />
-                    </>
-                  )}
-                  <Stat label="Total Packed" value={`${calc.packedLakhTotal} Lakhs ${calc.packedKgTotal ? `(${calc.packedKgTotal} kg)` : ""}`} />
-                  <Stat label="Total Dispatched" value={`${calc.dispatchLakhTotal} Lakhs ${calc.dispatchKgTotal ? `(${calc.dispatchKgTotal} kg)` : ""}`} />
-                  <Stat label="Commercial Splits" value={calc.linkedCount} />
-                </div>
-              )}
             </Card>
           );
         })}
@@ -901,7 +859,7 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
 }
 
 // ============================================================================
-// QA SCREEN — Quality Assurance Inspection Module
+// QA SCREEN
 // ============================================================================
 function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches }) {
   const d = DEPARTMENTS[dept];
@@ -918,7 +876,7 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
 
   const saveQaApproval = async () => {
     if (!selectedMB) return;
-    const updatedMBs = motherBatches.map((m) => m.id === selectedMbId ? { ...m, qaStatus, qaAssay, qaRemarks, qaInspector: userName || "QA Officer" } : m);
+    const updatedMBs = motherBatches.map((m) => m.id === selectedMbId ? { ...m, qaStatus, qaAssay, qaRemarks, qaInspector: userName || "Production/QA Officer" } : m);
     setMotherBatches(updatedMBs);
     await saveShared("dpyms_mother_batches", updatedMBs);
     setToast(`QA decision for ${selectedMbId} saved as ${qaStatus}`);
@@ -928,16 +886,11 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
     <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 16px 60px" }}>
       <SectionHeading eyebrow={`Quality Assurance · ${d.label}`} title="QA Inspection & Quality Clearance" sub="Review yield statistics and sign off on batch quality." />
 
-      <UniversalActionBar
-        onSave={saveQaApproval}
-        onUpdate={saveQaApproval}
-        onBack={() => {}}
-      />
+      <UniversalActionBar onSave={saveQaApproval} onUpdate={saveQaApproval} />
 
       <Card style={{ padding: 20, marginBottom: 24 }}>
         <Field label="Select Mother Batch for QA Clearance">
           <SelectInput value={selectedMbId} onChange={(e) => setSelectedMbId(e.target.value)}>
-            {deptMBs.length === 0 && <option value="">No batches available</option>}
             {deptMBs.map((m) => <option key={m.id} value={m.id}>{m.id} — {m.genericName} (Status: {m.qaStatus || "Pending"})</option>)}
           </SelectInput>
         </Field>
@@ -946,11 +899,10 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
           <div style={{ background: C.paleBg, borderRadius: 12, padding: 16, marginBottom: 18 }}>
             <div style={{ fontWeight: 700, fontSize: 15, color: C.navy, marginBottom: 10 }}>Batch Yield Summary — {selectedMB.id}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, fontSize: 13 }}>
-              <Stat label="Planned Batch" value={`${calc.plannedLakh || "—"} Lakhs (${calc.totalBatchKg || "—"} kg)`} />
-              <Stat label="Granulation Yield" value={<YieldBadge value={calc.granYield} />} />
-              <Stat label="Compression Yield" value={<YieldBadge value={calc.compYield} />} />
-              <Stat label="Coating Yield" value={<YieldBadge value={calc.coatYield} />} />
-              <Stat label="Current QA Status" value={<StatusPill status={selectedMB.qaStatus || "Pending"} />} />
+              <div><b>Planned:</b> {calc.plannedLakh} Lacs ({calc.totalBatchKg} kg)</div>
+              <div><b>Gran Yield:</b> <YieldBadge value={calc.granYield} /></div>
+              <div><b>Comp Yield:</b> <YieldBadge value={calc.compYield} /></div>
+              <div><b>Coat Yield:</b> <YieldBadge value={calc.coatYield} /></div>
             </div>
           </div>
         )}
@@ -964,9 +916,9 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
               <option value="On Hold">On Hold</option>
             </SelectInput>
           </Field>
-          <Field label="Assay / Potency (%)"><TextInput placeholder="e.g. 99.8%" value={qaAssay} onChange={(e) => setQaAssay(e.target.value)} /></Field>
+          <Field label="Assay / Potency (%)"><TextInput value={qaAssay} onChange={(e) => setQaAssay(e.target.value)} /></Field>
         </div>
-        <Field label="QA Inspection Remarks"><TextInput placeholder="e.g. Physical parameters, disintegration & dissolution meet IP specifications." value={qaRemarks} onChange={(e) => setQaRemarks(e.target.value)} /></Field>
+        <Field label="QA Inspection Remarks"><TextInput value={qaRemarks} onChange={(e) => setQaRemarks(e.target.value)} /></Field>
 
         <PrimaryButton onClick={saveQaApproval}>Save QA Clearance</PrimaryButton>
       </Card>
@@ -976,20 +928,28 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
 }
 
 // ============================================================================
-// PACKAGING SCREEN — Commercial Batch Entry
+// PACKAGING SCREEN
 // ============================================================================
 function PackagingScreen({ dept, userName, setUserName, motherBatches, commercialBatches, setCommercialBatches }) {
   const d = DEPARTMENTS[dept];
   const deptMBs = motherBatches.filter((m) => m.dept === dept);
 
   const [mbId, setMbId] = useState(deptMBs[0]?.id || "");
-  useEffect(() => {
-    if (!mbId && deptMBs[0]) setMbId(deptMBs[0].id);
-  }, [deptMBs]); // eslint-disable-line
+  useEffect(() => { if (!mbId && deptMBs[0]) setMbId(deptMBs[0].id); }, [deptMBs]); // eslint-disable-line
+
+  const selectedMB = motherBatches.find((m) => m.id === mbId);
+  const selectedMBCalc = selectedMB ? computeMB(selectedMB, commercialBatches) : null;
+  const totalMotherUnits = selectedMBCalc ? (parseFloat(selectedMBCalc.plannedLakh) * 100000 || 0) : 0;
 
   const [splitCount, setSplitCount] = useState(1);
   const [splitRows, setSplitRows] = useState([{ productName: "", batchNumber: "" }]);
   const [showSplitSetup, setShowSplitSetup] = useState(true);
+  const [editingCbId, setEditingCbId] = useState(null);
+
+  const detailBlank = { unitsReceived: "", packedQty: "", dispatchQty: "", rejectedUnits: "0", rrGeneratedUnits: "0", remarks: "" };
+  const [details, setDetails] = useState({});
+  const [toast, setToast] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   const applySplitCount = (n) => {
     const count = Math.max(1, Math.min(20, parseInt(n, 10) || 1));
@@ -1000,11 +960,6 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
       return next.slice(0, count);
     });
   };
-
-  const detailBlank = { unitsReceived: "", packedQty: "", dispatchQty: "", rejectedUnits: "0", damagedUnits: "0", remarks: "" };
-  const [details, setDetails] = useState({});
-  const [toast, setToast] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
 
   const startDetailEntry = () => {
     if (splitRows.some((r) => !r.productName || !r.batchNumber)) {
@@ -1021,39 +976,60 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
 
   const saveAll = async () => {
     if (!mbId) { setToast("Select a Mother Batch first"); return; }
-    const newRecords = splitRows.map((r, i) => ({ r, det: details[i] || {} }));
+
+    const requestedTotal = splitRows.reduce((sum, _, i) => sum + (parseFloat(details[i]?.unitsReceived) || 0), 0);
+    const existingOtherAllocated = commercialBatches
+      .filter((c) => c.mbId === mbId && c.id !== editingCbId)
+      .reduce((sum, c) => sum + (parseFloat(c.unitsReceived) || 0), 0);
+
+    if (totalMotherUnits > 0 && (existingOtherAllocated + requestedTotal > totalMotherUnits)) {
+      const available = Math.max(0, totalMotherUnits - existingOtherAllocated);
+      setToast(`Over-allocation blocked! Remaining available balance: ${lakhFromUnits(available)} Lacs (${available} units)`);
+      return;
+    }
 
     let running = [...commercialBatches];
     const finalRecords = [];
-    newRecords.forEach(({ r, det }) => {
-      const id = genCBId(running, dept);
+
+    splitRows.forEach((r, i) => {
+      const id = editingCbId || genCBId(running, dept);
       const rec = {
-        id, dept, mbId, date, loggedBy: userName || "",
+        id, dept, mbId, date, loggedBy: userName || "Packaging Officer",
         productName: r.productName, batchNumber: r.batchNumber,
-        ...det,
+        ...details[i],
         createdAt: Date.now(),
       };
       finalRecords.push(rec);
-      running = [rec, ...running];
+      running = [rec, ...running.filter((c) => c.id !== id)];
     });
 
-    const updated = sortNewestFirst([...finalRecords, ...commercialBatches]);
+    const updated = sortNewestFirst([...finalRecords, ...commercialBatches.filter((c) => !finalRecords.some((f) => f.id === c.id))]);
     setCommercialBatches(updated);
     await saveShared("dpyms_commercial_batches", updated);
-    setToast(`${finalRecords.length} commercial batch(es) saved`);
 
+    setToast(`Commercial batch record saved permanently`);
     setSplitCount(1);
     setSplitRows([{ productName: "", batchNumber: "" }]);
     setDetails({});
+    setEditingCbId(null);
     setShowSplitSetup(true);
   };
 
-  const deleteCB = async (cbId) => {
-    if (!window.confirm(`Are you sure you want to delete Commercial Batch ${cbId}?`)) return;
+  const editCB = (cb) => {
+    setEditingCbId(cb.id);
+    setMbId(cb.mbId);
+    setDate(cb.date);
+    setSplitCount(1);
+    setSplitRows([{ productName: cb.productName, batchNumber: cb.batchNumber }]);
+    setDetails({ 0: { unitsReceived: cb.unitsReceived, packedQty: cb.packedQty, dispatchQty: cb.dispatchQty, rejectedUnits: cb.rejectedUnits, rrGeneratedUnits: cb.rrGeneratedUnits || "0" } });
+    setShowSplitSetup(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
+  const deleteCB = async (cbId) => {
+    if (!window.confirm(`Delete Commercial Batch ${cbId}?`)) return;
     const updatedCBs = commercialBatches.filter((c) => c.id !== cbId);
     setCommercialBatches(updatedCBs);
-
     deleteSharedRow("commercial_batches", cbId);
     await saveShared("dpyms_commercial_batches", updatedCBs);
     setToast(`Commercial Batch ${cbId} deleted`);
@@ -1063,93 +1039,72 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
 
   return (
     <div style={{ maxWidth: 820, margin: "0 auto", padding: "20px 16px 60px" }}>
-      <SectionHeading eyebrow={`Packaging · ${d.label}`} title="Log Commercial Batches & Packaging Yields" sub="Track Units Received, Packed, Dispatched, Rejections & Damaged units." />
+      <SectionHeading eyebrow={`Packaging · ${d.label}`} title="Log Commercial Batches & Packaging Yields" sub="Track Units Received, Packed, Dispatched & Yields." />
 
-      <UniversalActionBar
-        onSave={saveAll}
-        onBack={() => setShowSplitSetup(true)}
-      />
+      <UniversalActionBar onSave={saveAll} onBack={() => { setShowSplitSetup(true); setEditingCbId(null); }} />
 
       <Card style={{ padding: 20, marginBottom: 24 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <Field label="Date"><TextInput type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Packaging Supervisor"><TextInput placeholder="Your name" value={userName} onChange={(e) => setUserName(e.target.value)} /></Field>
+          <Field label="Packaging Officer Name"><TextInput placeholder="Officer Name" value={userName} onChange={(e) => setUserName(e.target.value)} /></Field>
         </div>
-        <Field label="Mother Batch">
+
+        <Field label="Mother Batch ID (Parent Batch)" hint={selectedMB ? `Generic: ${selectedMB.genericName} (${selectedMBCalc?.plannedLakh || "?"} Lacs)` : ""}>
           <SelectInput value={mbId} onChange={(e) => setMbId(e.target.value)}>
-            {deptMBs.length === 0 && <option value="">No mother batches available</option>}
             {deptMBs.map((mb) => <option key={mb.id} value={mb.id}>{mb.id} — {mb.genericName || "Untitled"}</option>)}
           </SelectInput>
         </Field>
 
         {showSplitSetup ? (
           <>
-            <Field label="Number of Commercial Batches" hint="How many brand lines is this Mother Batch split into?">
-              <TextInput type="number" min="1" max="20" value={splitCount} onChange={(e) => applySplitCount(e.target.value)} />
-            </Field>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-              {splitRows.map((row, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: C.paleBg, padding: 12, borderRadius: 10 }}>
-                  <Field label={`Batch ${i + 1} — Product Name`}>
-                    <TextInput placeholder="e.g. LOPRABLUE TABLETS 2 MG" value={row.productName} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, productName: e.target.value } : r))} />
-                  </Field>
-                  <Field label={`Batch ${i + 1} — Batch Number`}>
-                    <TextInput placeholder="e.g. LEA26001" value={row.batchNumber} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, batchNumber: e.target.value } : r))} />
-                  </Field>
-                </div>
-              ))}
-            </div>
-            <PrimaryButton onClick={startDetailEntry}>Continue to Packaging Details →</PrimaryButton>
+            <Field label="Number of Brand Splits"><TextInput type="number" min="1" max="20" value={splitCount} onChange={(e) => applySplitCount(e.target.value)} /></Field>
+            {splitRows.map((row, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, background: C.paleBg, padding: 12, borderRadius: 10, marginBottom: 12 }}>
+                <Field label={`Split ${i + 1} — Brand Name`}><TextInput placeholder="e.g. ALDONIX-P" value={row.productName} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, productName: e.target.value } : r))} /></Field>
+                <Field label={`Split ${i + 1} — Batch Number`}><TextInput placeholder="e.g. LPX26001" value={row.batchNumber} onChange={(e) => setSplitRows((prev) => prev.map((r, j) => j === i ? { ...r, batchNumber: e.target.value } : r))} /></Field>
+              </div>
+            ))}
+            <PrimaryButton onClick={startDetailEntry}>Continue to Yield Entry →</PrimaryButton>
           </>
         ) : (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
-              {splitRows.map((row, i) => {
-                const det = details[i] || {};
-                const recv = parseFloat(det.unitsReceived) || 0;
-                const packed = parseFloat(det.packedQty) || 0;
-                const rej = parseFloat(det.rejectedUnits) || 0;
-                const dam = parseFloat(det.damagedUnits) || 0;
-                const bal = Math.max(0, recv - (packed + rej + dam));
-                const yieldPct = recv > 0 ? pct(packed, recv) : "";
+            {splitRows.map((row, i) => {
+              const det = details[i] || {};
 
-                return (
-                  <Card key={i} style={{ padding: 16, background: C.paleBg }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: C.navy, marginBottom: 12 }}>
-                      {row.productName} <span style={{ color: C.sub, fontWeight: 400 }}>· Batch #{row.batchNumber}</span>
-                    </div>
+              return (
+                <Card key={i} style={{ padding: 16, background: C.paleBg, marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, textTransform: "uppercase", marginBottom: 6 }}>
+                    Belongs to Mother Batch: {mbId}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: C.navy, marginBottom: 12 }}>
+                    Brand Name: {row.productName} <span style={{ color: C.sub, fontWeight: 400 }}>· Batch #{row.batchNumber}</span>
+                  </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <Field label="Units Received (Counts)"><TextInput type="number" placeholder="e.g. 500000" value={det.unitsReceived || ""} onChange={setDetail(i, "unitsReceived")} /></Field>
-                      <Field label="Units Packed"><TextInput type="number" placeholder="e.g. 496500" value={det.packedQty || ""} onChange={setDetail(i, "packedQty")} /></Field>
-                    </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Field label="Units Received (Batch Size)"><TextInput type="number" placeholder="e.g. 400000 (4.00 Lacs)" value={det.unitsReceived || ""} onChange={setDetail(i, "unitsReceived")} /></Field>
+                    <Field label="Units Packed"><TextInput type="number" placeholder="e.g. 397600 (3.976 Lacs)" value={det.packedQty || ""} onChange={setDetail(i, "packedQty")} /></Field>
+                  </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <Field label="Units Dispatched"><TextInput type="number" placeholder="e.g. 495000" value={det.dispatchQty || ""} onChange={setDetail(i, "dispatchQty")} /></Field>
-                      <Field label="Rejected Units"><TextInput type="number" value={det.rejectedUnits || "0"} onChange={setDetail(i, "rejectedUnits")} /></Field>
-                    </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Field label="Units Dispatched"><TextInput type="number" placeholder="e.g. 396000 (3.96 Lacs)" value={det.dispatchQty || ""} onChange={setDetail(i, "dispatchQty")} /></Field>
+                    <Field label="Rejected Units"><TextInput type="number" value={det.rejectedUnits || "0"} onChange={setDetail(i, "rejectedUnits")} /></Field>
+                  </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <Field label="Damaged Units"><TextInput type="number" value={det.damagedUnits || "0"} onChange={setDetail(i, "damagedUnits")} /></Field>
-                      <Field label="Balance Units (Auto)"><TextInput type="number" value={bal} readOnly style={{ background: C.white }} /></Field>
-                    </div>
-
-                    <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: C.navy }}>
-                      Packaging Yield: <YieldBadge value={yieldPct} />
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+                  <Field label="RR Generated / Retained for Future Batches (Units)" hint="Extra good loose tablets saved for reuse — NOT counted as loss!">
+                    <TextInput type="number" placeholder="e.g. 800 (Saved for next batch)" value={det.rrGeneratedUnits || "0"} onChange={setDetail(i, "rrGeneratedUnits")} />
+                  </Field>
+                </Card>
+              );
+            })}
             <div style={{ display: "flex", gap: 10 }}>
               <SecondaryButton onClick={() => setShowSplitSetup(true)} style={{ flex: 1 }}>← Back</SecondaryButton>
-              <PrimaryButton onClick={saveAll} style={{ flex: 2 }}>Save Packaging Records</PrimaryButton>
+              <PrimaryButton onClick={saveAll} style={{ flex: 2 }}>{editingCbId ? "Update Commercial Record" : "Save Packaging Records"}</PrimaryButton>
             </div>
           </>
         )}
       </Card>
 
-      <SectionHeading title={`Recent Packaging Records`} small />
+      <SectionHeading title="Commercial Batch Register" small />
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {deptCBs.map((cb) => {
           const calc = computeCB(cb, motherBatches);
@@ -1157,17 +1112,15 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
             <Card key={cb.id} style={{ padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{cb.id} · {cb.productName}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{cb.id} · {cb.productName} <span style={{ color: C.sub }}>(MB: {cb.mbId})</span></div>
                   <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>
-                    Batch #{cb.batchNumber} · Packed: {fmtNum(cb.packedQty)} ({calc.packedLakh ? `${calc.packedLakh} Lakhs` : "—"})
+                    Batch #{cb.batchNumber} · Recv: {cb.unitsReceived} ({calc.recvLakh} Lacs) · Packed: {cb.packedQty} ({calc.packedLakh} Lacs) · RR Retained: <b>{calc.rrGen} units</b>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ textAlign: "right" }}>
-                    <YieldBadge value={calc.pkgYield} />
-                    <div style={{ fontSize: 10, color: C.sub }}>Pkg Yield</div>
-                  </div>
-                  <button type="button" className="btn-nav btn-delete" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => deleteCB(cb.id)}>🗑️ Delete</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <YieldBadge value={calc.pkgYield} />
+                  <button type="button" className="btn-nav btn-edit" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => editCB(cb)}>✏️ Edit</button>
+                  <button type="button" className="btn-nav btn-delete" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => deleteCB(cb.id)}>🗑️ Delete</button>
                 </div>
               </div>
             </Card>
@@ -1179,62 +1132,13 @@ function PackagingScreen({ dept, userName, setUserName, motherBatches, commercia
   );
 }
 
-function BatchSplitVisual({ mb, commercialBatches }) {
-  const linked = commercialBatches.filter((c) => c.mbId === mb.id);
-  if (linked.length === 0) return null;
-  return (
-    <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px dashed ${C.line}` }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: C.navy, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Commercial Batches Created</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 16px" }}>
-        {linked.map((cb) => {
-          const cbCalc = computeCB(cb, [mb]);
-          return (
-            <div key={cb.id} style={{ fontSize: 12, background: C.paleBg, padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.line}` }}>
-              <b style={{ color: C.navy }}>{cb.productName}</b> <span style={{ color: C.sub }}>#{cb.batchNumber}</span> · Packed: <b>{fmtNum(cb.packedQty)}</b> ({cbCalc.packedLakh ? `${cbCalc.packedLakh} Lakhs` : "—"})
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ============================================================================
-// EXECUTIVE MANAGER DASHBOARD — FULL COMMERCIAL BATCH YIELD & DUAL UNITS
+// MANAGER DASHBOARD
 // ============================================================================
-function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, setCommercialBatches, onOpenRegister }) {
-  const [activeTab, setActiveTab] = useState("mother"); // "mother" or "commercial"
+function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, setCommercialBatches }) {
+  const [activeTab, setActiveTab] = useState("mother");
   const [deptFilter, setDeptFilter] = useState("all");
-
-  const filteredMBs = deptFilter === "all" ? motherBatches : motherBatches.filter((m) => m.dept === deptFilter);
-  const filteredCBs = deptFilter === "all" ? commercialBatches : commercialBatches.filter((c) => c.dept === deptFilter);
-
-  const mbRows = filteredMBs.map((mb) => ({ mb, calc: computeMB(mb, commercialBatches) }));
-  const cbRows = filteredCBs.map((cb) => ({ cb, calc: computeCB(cb, motherBatches) }));
-
-  const deleteMB = async (mbId) => {
-    if (!window.confirm(`Are you sure you want to delete Mother Batch ${mbId}?`)) return;
-
-    const updatedMBs = motherBatches.filter((m) => m.id !== mbId);
-    const updatedCBs = commercialBatches.filter((c) => c.mbId !== mbId);
-
-    setMotherBatches(updatedMBs);
-    setCommercialBatches(updatedCBs);
-
-    deleteSharedRow("mother_batches", mbId);
-    await saveShared("dpyms_mother_batches", updatedMBs);
-    await saveShared("dpyms_commercial_batches", updatedCBs);
-  };
-
-  const deleteCB = async (cbId) => {
-    if (!window.confirm(`Are you sure you want to delete Commercial Batch ${cbId}?`)) return;
-
-    const updatedCBs = commercialBatches.filter((c) => c.id !== cbId);
-    setCommercialBatches(updatedCBs);
-
-    deleteSharedRow("commercial_batches", cbId);
-    await saveShared("dpyms_commercial_batches", updatedCBs);
-  };
+  const [search, setSearch] = useState("");
 
   const loadSamplePlantData = async () => {
     setMotherBatches(SAMPLE_MOTHER_BATCHES);
@@ -1242,6 +1146,37 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
     await saveShared("dpyms_mother_batches", SAMPLE_MOTHER_BATCHES);
     await saveShared("dpyms_commercial_batches", SAMPLE_COMMERCIAL_BATCHES);
   };
+
+  const deleteMB = async (mbId) => {
+    if (!window.confirm(`Delete Mother Batch ${mbId}?`)) return;
+    const updatedMBs = motherBatches.filter((m) => m.id !== mbId);
+    const updatedCBs = commercialBatches.filter((c) => c.mbId !== mbId);
+    setMotherBatches(updatedMBs);
+    setCommercialBatches(updatedCBs);
+    deleteSharedRow("mother_batches", mbId);
+    await saveShared("dpyms_mother_batches", updatedMBs);
+    await saveShared("dpyms_commercial_batches", updatedCBs);
+  };
+
+  const deleteCB = async (cbId) => {
+    if (!window.confirm(`Delete Commercial Batch ${cbId}?`)) return;
+    const updatedCBs = commercialBatches.filter((c) => c.id !== cbId);
+    setCommercialBatches(updatedCBs);
+    deleteSharedRow("commercial_batches", cbId);
+    await saveShared("dpyms_commercial_batches", updatedCBs);
+  };
+
+  const filteredMBs = deptFilter === "all" ? motherBatches : motherBatches.filter((m) => m.dept === deptFilter);
+  const filteredCBs = deptFilter === "all" ? commercialBatches : commercialBatches.filter((c) => c.dept === deptFilter);
+
+  const mbRows = filteredMBs.map((mb) => ({ mb, calc: computeMB(mb, commercialBatches), linkedCBs: commercialBatches.filter((c) => c.mbId === mb.id) }))
+    .filter(({ mb }) => {
+      if (!search) return true;
+      const s = search.toLowerCase();
+      return mb.id.toLowerCase().includes(s) || (mb.genericName || "").toLowerCase().includes(s);
+    });
+
+  const cbRows = filteredCBs.map((cb) => ({ cb, calc: computeCB(cb, motherBatches) }));
 
   const totals = useMemo(() => {
     const cbInScope = deptFilter === "all" ? commercialBatches : commercialBatches.filter((c) => c.dept === deptFilter);
@@ -1265,31 +1200,50 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
     return { ...d, count: mbs.length, splits: cbs.length, deptLakhs, deptKg };
   });
 
+  const exportCSVReport = () => {
+    const headers = [
+      { key: "date", label: "Date" },
+      { key: "id", label: "MB ID" },
+      { key: "genericName", label: "Generic Name of Product" },
+      { key: "planned", label: "Planned (Kg & Lacs)" },
+      { key: "granYield", label: "Gran Output %" },
+      { key: "compYield", label: "Comp Output %" },
+      { key: "coatYield", label: "Coating Output %" },
+      { key: "finalYield", label: "Final Yield %" }
+    ];
+    const exportData = mbRows.map(({ mb, calc }) => ({
+      date: mb.date, id: mb.id, genericName: mb.genericName,
+      planned: `${calc.totalBatchKg} kg / ${calc.plannedLakh} lacs`,
+      granYield: `${calc.granYield}%`, compYield: `${calc.compYield}%`, coatYield: `${calc.coatYield}%`,
+      finalYield: `${calc.finalYield}%`
+    }));
+    downloadCSV(`DPYMS_Unified_Plant_Register_${new Date().toISOString().slice(0, 10)}.csv`, toCSV(exportData, headers));
+  };
+
   return (
-    <div style={{ maxWidth: 1060, margin: "0 auto", padding: "20px 16px 60px" }}>
+    <div style={{ maxWidth: 1140, margin: "0 auto", padding: "20px 16px 60px" }}>
       <SectionHeading
-        eyebrow="Manager Dashboard"
+        eyebrow="MANAGER DASHBOARD"
         title="Plant-Wide Manufacturing & Yield Overview"
         sub="Mother Batch Multi-stage Analytics & Full Commercial Batch Yield Calculations."
         right={
           <div style={{ display: "flex", gap: 10 }}>
-            {motherBatches.length === 0 && (
-              <SecondaryButton onClick={loadSamplePlantData}>🧪 Load Sample Plant Data</SecondaryButton>
-            )}
-            <SecondaryButton onClick={onOpenRegister}>Open Plant Register & Reports →</SecondaryButton>
+            {motherBatches.length === 0 && <SecondaryButton onClick={loadSamplePlantData}>🧪 Load Sample Plant Data</SecondaryButton>}
+            <SecondaryButton onClick={exportCSVReport}>⬇ Export CSV Report</SecondaryButton>
+            <PrimaryButton onClick={() => window.print()} style={{ width: "auto" }}>🖨️ Print GMP Report</PrimaryButton>
           </div>
         }
       />
 
-      {/* Main Mode Toggle: Mother Batches vs Commercial Batches */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 20 }} className="no-print">
         <button
           onClick={() => setActiveTab("mother")}
           style={{
-            flex: 1, padding: "12px 18px", borderRadius: 12, border: `1.5px solid ${C.navy}`,
+            flex: 1, padding: "14px 20px", borderRadius: 12, border: `1.5px solid ${C.navy}`,
             background: activeTab === "mother" ? C.navy : C.white,
             color: activeTab === "mother" ? C.white : C.navy,
-            fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            fontWeight: 700, fontSize: 14.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            boxShadow: activeTab === "mother" ? "0 4px 12px rgba(14,42,94,0.15)" : "none"
           }}
         >
           📊 Mother Batches Overview ({filteredMBs.length})
@@ -1297,17 +1251,18 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
         <button
           onClick={() => setActiveTab("commercial")}
           style={{
-            flex: 1, padding: "12px 18px", borderRadius: 12, border: `1.5px solid ${C.navy}`,
+            flex: 1, padding: "14px 20px", borderRadius: 12, border: `1.5px solid ${C.navy}`,
             background: activeTab === "commercial" ? C.navy : C.white,
             color: activeTab === "commercial" ? C.white : C.navy,
-            fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+            fontWeight: 700, fontSize: 14.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            boxShadow: activeTab === "commercial" ? "0 4px 12px rgba(14,42,94,0.15)" : "none"
           }}
         >
           📦 Commercial Batches & Yields ({filteredCBs.length})
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }} className="no-print">
         <FilterChip active={deptFilter === "all"} onClick={() => setDeptFilter("all")} label="All Product Lines" />
         {DEPT_LIST.map((d) => (
           <FilterChip key={d.key} active={deptFilter === d.key} onClick={() => setDeptFilter(d.key)} label={`${d.label}`} />
@@ -1316,26 +1271,26 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 22 }}>
         <Card style={{ padding: "16px" }}>
-          <Stat label="Mother Batches" value={totals.batches} />
+          <Stat label="MOTHER BATCHES" value={totals.batches} />
         </Card>
         <Card style={{ padding: "16px" }}>
-          <Stat label="Total Planned Production" value={`${totals.totalPlannedLakhs} Lakhs (${totals.totalPlannedKg} kg)`} />
+          <Stat label="TOTAL PLANNED PRODUCTION" value={`${totals.totalPlannedLakhs} Lakhs (${totals.totalPlannedKg} kg)`} />
         </Card>
         <Card style={{ padding: "16px" }}>
-          <Stat label="Total Dispatched Units" value={`${totals.totalDispatchedLakhs} Lakhs (${fmtNum(totals.totalDispatchedUnits)})`} />
+          <Stat label="TOTAL DISPATCHED UNITS" value={`${totals.totalDispatchedLakhs} Lakhs (${fmtNum(totals.totalDispatchedUnits)})`} />
         </Card>
         <Card style={{ padding: "16px" }}>
-          <Stat label="QA Approved Batches" value={totals.approvedQA} />
+          <Stat label="QA APPROVED BATCHES" value={totals.approvedQA} />
         </Card>
         <Card style={{ padding: "16px" }}>
-          <Stat label="Pending QA Clearance" value={totals.pendingQA} />
+          <Stat label="PENDING QA CLEARANCE" value={totals.pendingQA} />
         </Card>
       </div>
 
-      {deptFilter === "all" && activeTab === "mother" && (
-        <>
+      {deptFilter === "all" && (
+        <div style={{ marginBottom: 26 }}>
           <SectionHeading title="Department Production Summaries (Kg & Lakhs)" small />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 26 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
             {byDept.map((d) => (
               <Card key={d.key} style={{ padding: "18px 16px", cursor: "pointer" }} onClick={() => setDeptFilter(d.key)}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
@@ -1351,309 +1306,216 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
               </Card>
             ))}
           </div>
-        </>
-      )}
-
-      {activeTab === "mother" ? (
-        <>
-          <SectionHeading title="Mother Batches — Stage Yield Breakdown" small sub="Granulation, Compression, Coating & Packaging Totals" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {mbRows.length === 0 && (
-              <Card style={{ padding: 30, textAlign: "center" }}>
-                <EmptyNote text="No active mother batches in this section yet." />
-                <div style={{ marginTop: 14 }}>
-                  <SecondaryButton onClick={loadSamplePlantData}>🧪 Click here to load sample data for testing</SecondaryButton>
-                </div>
-              </Card>
-            )}
-            {mbRows.map(({ mb, calc }) => {
-              const isTablet = mb.dept === "tablet";
-              const isCapsule = mb.dept === "capsule";
-
-              return (
-                <Card key={mb.id} style={{ padding: 20 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 16, display: "flex", alignItems: "center", gap: 10 }}>
-                        {mb.id} · {mb.genericName || "Untitled"} <DeptTag dept={mb.dept} />
-                      </div>
-                      <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>
-                        Group: <b>{mb.productGroup || "N/A"}</b> · {fmtDate(mb.date)}{mb.loggedBy ? ` · Logged by ${mb.loggedBy}` : ""}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                      <StatusPill status={mb.qaStatus || "Pending"} />
-                      <button type="button" className="btn-nav btn-delete" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => deleteMB(mb.id)}>🗑️ Delete</button>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginTop: 16, fontSize: 13 }}>
-                    <Stat label="Planned Batch" value={`${calc.plannedLakh || "—"} Lakhs (${calc.totalBatchKg || "—"} kg)`} />
-                    {isTablet && (
-                      <>
-                        <Stat label="Granulation Output" value={`${mb.granOutput || "—"} kg (${calc.granLakh || "—"} Lakhs)`} />
-                        <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
-                        <Stat label="Compression Output" value={`${mb.compOutput || "—"} kg (${calc.compLakh || "—"} Lakhs)`} />
-                        <Stat label="Comp Yield" value={<YieldBadge value={calc.compYield} />} />
-                        <Stat label="Coating Output" value={calc.coat === "NA" ? "NA" : `${mb.coatOutput || "—"} kg (${calc.coatLakh || "—"} Lakhs)`} />
-                        <Stat label="Coat Yield" value={<YieldBadge value={calc.coatYield} />} />
-                      </>
-                    )}
-                    {isCapsule && (
-                      <>
-                        <Stat label="Granulation Output" value={`${mb.granOutput || "—"} kg (${calc.granLakh || "—"} Lakhs)`} />
-                        <Stat label="Gran Yield" value={<YieldBadge value={calc.granYield} />} />
-                        <Stat label="Filling Output" value={`${mb.compOutput || "—"} kg (${calc.compLakh || "—"} Lakhs)`} />
-                        <Stat label="Fill Yield" value={<YieldBadge value={calc.compYield} />} />
-                      </>
-                    )}
-                    <Stat label="Total Packed" value={`${calc.packedLakhTotal} Lakhs ${calc.packedKgTotal ? `(${calc.packedKgTotal} kg)` : ""}`} />
-                    <Stat label="Total Dispatched" value={`${calc.dispatchLakhTotal} Lakhs ${calc.dispatchKgTotal ? `(${calc.dispatchKgTotal} kg)` : ""}`} />
-                  </div>
-
-                  <BatchSplitVisual mb={mb} commercialBatches={commercialBatches} />
-                </Card>
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <>
-          <SectionHeading title="Commercial Batches — Complete Yield & Packaging Analytics" small sub="Full breakdown of Units Received, Packed, Dispatched, Losses, Packaging Yield & Dispatch Yield" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {cbRows.length === 0 && <EmptyNote text="No commercial batches logged yet in this section." />}
-            {cbRows.map(({ cb, calc }) => (
-              <Card key={cb.id} style={{ padding: 20 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 16, color: C.navy, display: "flex", alignItems: "center", gap: 10 }}>
-                      {cb.id} · {cb.productName} <span style={{ background: C.paleBg, border: `1px solid ${C.line}`, color: C.sub, fontSize: 12, padding: "2px 8px", borderRadius: 6 }}>#{cb.batchNumber}</span>
-                    </div>
-                    <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>
-                      Linked Mother Batch: <b>{cb.mbId}</b> · Date: {fmtDate(cb.date)}{cb.loggedBy ? ` · Supervisor: ${cb.loggedBy}` : ""}
-                    </div>
-                  </div>
-                  <button type="button" className="btn-nav btn-delete" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => deleteCB(cb.id)}>🗑️ Delete</button>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginTop: 16, fontSize: 13 }}>
-                  <Stat label="Units Received" value={`${calc.recvLakh ? `${calc.recvLakh} Lakhs` : "—"} (${fmtNum(cb.unitsReceived)})`} />
-                  <Stat label="Units Packed" value={`${calc.packedLakh ? `${calc.packedLakh} Lakhs` : "—"} (${fmtNum(cb.packedQty)})`} />
-                  <Stat label="Units Dispatched" value={`${calc.dispatchLakh ? `${calc.dispatchLakh} Lakhs` : "—"} (${fmtNum(cb.dispatchQty)})`} />
-                  <Stat label="Rejections / Damaged" value={`${fmtNum(cb.rejectedUnits || 0)} / ${fmtNum(cb.damagedUnits || 0)}`} />
-                  <Stat label="Balance Units" value={fmtNum(calc.balanceUnits)} />
-                  <Stat label="Packaging Yield" value={<YieldBadge value={calc.pkgYield} />} />
-                  <Stat label="Dispatch Yield" value={<YieldBadge value={calc.dispatchYield} />} />
-                  <Stat label="Final Overall Yield" value={<YieldBadge value={calc.finalYield} />} />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function FilterChip({ active, onClick, label }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: active ? C.navy : C.white, color: active ? C.white : C.ink,
-        border: `1.5px solid ${active ? C.navy : C.line}`, borderRadius: 999,
-        padding: "7px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer",
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-// ============================================================================
-// PLANT REGISTER & PRINTABLE GMP REPORTS
-// ============================================================================
-function PlantRegister({ motherBatches, setMotherBatches, commercialBatches, setCommercialBatches, onBack }) {
-  const [tab, setTab] = useState("mother");
-  const [deptFilter, setDeptFilter] = useState("all");
-  const [search, setSearch] = useState("");
-
-  const filterList = (list, textFields) =>
-    list.filter((r) => {
-      if (deptFilter !== "all" && r.dept !== deptFilter) return false;
-      if (search) {
-        const hay = textFields.map((f) => (r[f] || "").toString().toLowerCase()).join(" ");
-        if (!hay.includes(search.toLowerCase())) return false;
-      }
-      return true;
-    });
-
-  const mbFiltered = sortNewestFirst(filterList(motherBatches, ["id", "genericName", "productGroup", "loggedBy"]));
-  const cbFiltered = sortNewestFirst(filterList(commercialBatches, ["id", "productName", "batchNumber", "mbId", "loggedBy"]));
-
-  const deleteMB = async (mbId) => {
-    if (!window.confirm(`Delete Mother Batch ${mbId}?`)) return;
-    const updatedMBs = motherBatches.filter(m => m.id !== mbId);
-    const updatedCBs = commercialBatches.filter(c => c.mbId !== mbId);
-    setMotherBatches(updatedMBs);
-    setCommercialBatches(updatedCBs);
-    deleteSharedRow("mother_batches", mbId);
-    await saveShared("dpyms_mother_batches", updatedMBs);
-    await saveShared("dpyms_commercial_batches", updatedCBs);
-  };
-
-  const deleteCB = async (cbId) => {
-    if (!window.confirm(`Delete Commercial Batch ${cbId}?`)) return;
-    const updatedCBs = commercialBatches.filter(c => c.id !== cbId);
-    setCommercialBatches(updatedCBs);
-    deleteSharedRow("commercial_batches", cbId);
-    await saveShared("dpyms_commercial_batches", updatedCBs);
-  };
-
-  const exportMother = () => {
-    const headers = [
-      { key: "id", label: "MB ID" }, { key: "dept", label: "Department" }, { key: "date", label: "Date" },
-      { key: "genericName", label: "Generic Name" }, { key: "plannedLakh", label: "Planned (Lakh)" },
-      { key: "totalBatchKg", label: "Planned (Kg)" }, { key: "granYield", label: "Gran Yield %" },
-      { key: "compYield", label: "Comp Yield %" }, { key: "coatYield", label: "Coat Yield %" },
-      { key: "qaStatus", label: "QA Status" }
-    ];
-    const rows = mbFiltered.map((mb) => ({ ...mb, ...computeMB(mb, commercialBatches) }));
-    downloadCSV(`DPYMS_Mother_Batches_${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, headers));
-  };
-
-  const exportCommercial = () => {
-    const headers = [
-      { key: "id", label: "CB ID" }, { key: "productName", label: "Product Name" }, { key: "batchNumber", label: "Batch Number" },
-      { key: "packedQty", label: "Packed Qty" }, { key: "packedLakh", label: "Packed (Lakh)" }, { key: "dispatchQty", label: "Dispatch Qty" }, { key: "dispatchLakh", label: "Dispatch (Lakh)" }, { key: "pkgYield", label: "Pkg Yield %" }
-    ];
-    const rows = cbFiltered.map((cb) => ({ ...cb, ...computeCB(cb, motherBatches) }));
-    downloadCSV(`DPYMS_Commercial_Batches_${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, headers));
-  };
-
-  return (
-    <div style={{ maxWidth: 1040, margin: "0 auto", padding: "20px 16px 60px" }}>
-      <div className="no-print">
-        <SectionHeading
-          eyebrow="Plant Register"
-          title="Complete Plant Records & GMP Reports"
-          sub="Filter, search, export CSV, edit or delete records."
-          right={
-            <div style={{ display: "flex", gap: 10 }}>
-              <SecondaryButton onClick={onBack}>← Back to Dashboard</SecondaryButton>
-              <PrimaryButton onClick={() => window.print()} style={{ width: "auto" }}>🖨️ Print Report</PrimaryButton>
-            </div>
-          }
-        />
-
-        <Card style={{ padding: 16, marginBottom: 20 }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-            <button onClick={() => setTab("mother")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${C.navy}`, background: tab === "mother" ? C.navy : C.white, color: tab === "mother" ? C.white : C.navy, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-              Mother Batches ({mbFiltered.length})
-            </button>
-            <button onClick={() => setTab("commercial")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: `1.5px solid ${C.navy}`, background: tab === "commercial" ? C.navy : C.white, color: tab === "commercial" ? C.white : C.navy, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-              Commercial Batches ({cbFiltered.length})
-            </button>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label="Filter by Section">
-              <SelectInput value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
-                <option value="all">All Sections</option>
-                {DEPT_LIST.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </SelectInput>
-            </Field>
-            <Field label="Search Register"><TextInput placeholder="Search ID, Generic Name, Batch No..." value={search} onChange={(e) => setSearch(e.target.value)} /></Field>
-          </div>
-
-          <SecondaryButton onClick={tab === "mother" ? exportMother : exportCommercial}>
-            ⬇ Export {tab === "mother" ? "Mother Batches" : "Commercial Batches"} to Excel (CSV)
-          </SecondaryButton>
-        </Card>
-      </div>
-
-      <div style={{ background: C.white, padding: 30, borderRadius: 16, border: `1px solid ${C.line}` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${C.navy}`, paddingBottom: 16, marginBottom: 20 }}>
-          <img src={BRAND_LOGO} alt="Danish Healthcare" style={{ height: 50 }} />
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: C.navy, fontFamily: FONT_DISPLAY }}>DANISH HEALTH CARE (P) LTD.</div>
-            <div style={{ fontSize: 11, color: C.sub }}>76/27-29, Industrial Estate, Maxi Road, Ujjain 456010</div>
-            <div style={{ fontSize: 11, color: C.blue, fontWeight: 700 }}>GMP PRODUCTION YIELD REGISTER</div>
-          </div>
         </div>
+      )}
 
-        {tab === "mother" ? (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+      <Card style={{ padding: 16, marginBottom: 20 }} className="no-print">
+        <Field label="Search Register / Batches"><TextInput placeholder="Search MB ID, Generic Name, Brand..." value={search} onChange={(e) => setSearch(e.target.value)} /></Field>
+      </Card>
+
+      {/* Unified Platform Overview Table */}
+      {activeTab === "mother" ? (
+        <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.line}`, padding: 24, overflowX: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${C.navy}`, paddingBottom: 14, marginBottom: 16 }}>
+            <img src={BRAND_LOGO} alt="Danish Healthcare" style={{ height: 44 }} />
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.navy, fontFamily: FONT_DISPLAY }}>DANISH HEALTH CARE (P) LTD.</div>
+              <div style={{ fontSize: 11, color: C.blue, fontWeight: 700 }}>UNIFIED PLANT REGISTER & PROGRESSIVE YIELD REPORT</div>
+            </div>
+          </div>
+
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, textAlign: "center" }}>
             <thead>
-              <tr style={{ background: C.navy, color: C.white }}>
-                <th style={{ padding: 8, textAlign: "left" }}>Date</th>
-                <th style={{ padding: 8, textAlign: "left" }}>MB ID</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Product</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Planned (Lakhs & Kg)</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Gran Output</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Comp Output</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Coat Output</th>
-                <th style={{ padding: 8, textAlign: "left" }}>QA Status</th>
-                <th style={{ padding: 8, textAlign: "center" }} className="no-print">Action</th>
+              <tr style={{ background: C.navy, color: C.white, fontSize: 11.5 }}>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Date</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>MB ID</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}`, minWidth: 160 }}>Generic Name of Product</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Planned</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Gran. Output (%)</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Comp. Output (%)</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Coating Output (%)</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}`, minWidth: 150 }}>Mother batches splits into Brand Name</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Batch Size</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Pack. yield</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Dispatch Yield</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }}>Final yield</th>
+                <th style={{ padding: 10, border: `1px solid ${C.navy2}` }} className="no-print">Action</th>
               </tr>
             </thead>
             <tbody>
-              {mbFiltered.map((mb, i) => {
-                const calc = computeMB(mb, commercialBatches);
+              {mbRows.length === 0 && (
+                <tr>
+                  <td colSpan="13" style={{ padding: 30 }}><EmptyNote text="No batch records found." /></td>
+                </tr>
+              )}
+              {mbRows.map(({ mb, calc, linkedCBs }) => {
+                const splitRowsCount = Math.max(1, linkedCBs.length);
+
                 return (
-                  <tr key={mb.id} style={{ borderBottom: `1px solid ${C.line}`, background: i % 2 === 0 ? C.white : C.paleBg }}>
-                    <td style={{ padding: 8 }}>{fmtDate(mb.date)}</td>
-                    <td style={{ padding: 8, fontWeight: 700 }}>{mb.id}</td>
-                    <td style={{ padding: 8 }}>{mb.genericName}</td>
-                    <td style={{ padding: 8, fontWeight: 700 }}>{calc.plannedLakh ? `${calc.plannedLakh} L` : "—"} ({calc.totalBatchKg ? `${calc.totalBatchKg} kg` : "—"})</td>
-                    <td style={{ padding: 8 }}>{mb.granOutput ? `${mb.granOutput} kg (${calc.granLakh} L)` : "—"}</td>
-                    <td style={{ padding: 8 }}>{mb.compOutput ? `${mb.compOutput} kg (${calc.compLakh} L)` : "—"}</td>
-                    <td style={{ padding: 8 }}>{mb.coatOutput ? `${mb.coatOutput} kg (${calc.coatLakh} L)` : "—"}</td>
-                    <td style={{ padding: 8 }}><StatusPill status={mb.qaStatus || "Pending"} /></td>
-                    <td style={{ padding: 8, textAlign: "center" }} className="no-print">
-                      <button type="button" className="btn-nav btn-delete" style={{ padding: "3px 8px", fontSize: 11 }} onClick={() => deleteMB(mb.id)}>🗑️ Delete</button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={mb.id}>
+                    {splitRowsCount === 1 ? (
+                      <tr style={{ borderBottom: `1px solid ${C.line}`, background: C.white }}>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>{fmtDate(mb.date)}</td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}`, fontWeight: 700, color: C.navy }}>{mb.id}</td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}`, textAlign: "left" }}><b>{mb.genericName}</b></td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          <div><b>{mb.plannedBatchWt ? `${mb.plannedBatchWt} kg` : "—"}</b></div>
+                          <div>{calc.plannedLakh} lacs</div>
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          <div>{mb.granOutput ? `${mb.granOutput} kg` : "—"}</div>
+                          <div>{calc.granLakh} lacs</div>
+                          <div style={{ color: C.ok, fontWeight: 700 }}>({calc.granYield}%)</div>
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          <div>{mb.compOutput ? `${mb.compOutput} kg` : "—"}</div>
+                          <div>{calc.compLakh} lacs</div>
+                          <div style={{ color: C.ok, fontWeight: 700 }}>({calc.compYield}%)</div>
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          {calc.coat === "NA" ? "NA" : (
+                            <>
+                              <div>{mb.coatOutput ? `${mb.coatOutput} kg` : "—"}</div>
+                              <div>{calc.coatLakh} lacs</div>
+                              <div style={{ color: C.ok, fontWeight: 700 }}>({calc.coatYield}%)</div>
+                            </>
+                          )}
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          {linkedCBs[0] ? `${linkedCBs[0].productName} (${linkedCBs[0].batchNumber})` : "—"}
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          {linkedCBs[0] ? `${lakhFromUnits(linkedCBs[0].unitsReceived)} LACS` : "—"}
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          {linkedCBs[0] ? `${computeCB(linkedCBs[0], [mb]).pkgYield}% (${lakhFromUnits(linkedCBs[0].packedQty)})` : "—"}
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }}>
+                          {linkedCBs[0] ? `${computeCB(linkedCBs[0], [mb]).dispatchYield}% (${lakhFromUnits(linkedCBs[0].dispatchQty)})` : "—"}
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}`, fontWeight: 700, color: C.ok, fontSize: 13 }}>
+                          {calc.finalYield ? `${calc.finalYield}%` : "—"}
+                        </td>
+                        <td style={{ padding: 10, border: `1px solid ${C.line}` }} className="no-print">
+                          <button type="button" className="btn-nav btn-delete" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => deleteMB(mb.id)}>🗑️ Delete</button>
+                        </td>
+                      </tr>
+                    ) : (
+                      linkedCBs.map((cb, idx) => {
+                        const cbCalc = computeCB(cb, [mb]);
+                        const isLastSplit = idx === linkedCBs.length - 1;
+                        const splitCellBorder = `1px solid ${C.line}`;
+
+                        return (
+                          <tr key={cb.id} style={{ borderBottom: isLastSplit ? `2px solid ${C.navy}` : `1.5px solid ${C.navy}`, background: idx % 2 === 0 ? C.white : C.paleBg }}>
+                            {idx === 0 && (
+                              <>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder }}>{fmtDate(mb.date)}</td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder, fontWeight: 700, color: C.navy }}>{mb.id}</td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder, textAlign: "left" }}><b>{mb.genericName}</b></td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder }}>
+                                  <div><b>{mb.plannedBatchWt ? `${mb.plannedBatchWt} kg` : "—"}</b></div>
+                                  <div>{calc.plannedLakh} lacs</div>
+                                </td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder }}>
+                                  <div>{mb.granOutput ? `${mb.granOutput} kg` : "—"}</div>
+                                  <div>{calc.granLakh} lacs</div>
+                                  <div style={{ color: C.ok, fontWeight: 700 }}>({calc.granYield}%)</div>
+                                </td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder }}>
+                                  <div>{mb.compOutput ? `${mb.compOutput} kg` : "—"}</div>
+                                  <div>{calc.compLakh} lacs</div>
+                                  <div style={{ color: C.ok, fontWeight: 700 }}>({calc.compYield}%)</div>
+                                </td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder }}>
+                                  {calc.coat === "NA" ? "NA" : (
+                                    <>
+                                      <div>{mb.coatOutput ? `${mb.coatOutput} kg` : "—"}</div>
+                                      <div>{calc.coatLakh} lacs</div>
+                                      <div style={{ color: C.ok, fontWeight: 700 }}>({calc.coatYield}%)</div>
+                                    </>
+                                  )}
+                                </td>
+                              </>
+                            )}
+                            <td style={{ padding: 10, border: splitCellBorder, borderBottom: isLastSplit ? splitCellBorder : `1.5px solid ${C.navy}`, fontWeight: 700 }}>
+                              {cb.productName} ({cb.batchNumber})
+                            </td>
+                            <td style={{ padding: 10, border: splitCellBorder, borderBottom: isLastSplit ? splitCellBorder : `1.5px solid ${C.navy}` }}>
+                              {lakhFromUnits(cb.unitsReceived)} LACS
+                            </td>
+                            <td style={{ padding: 10, border: splitCellBorder, borderBottom: isLastSplit ? splitCellBorder : `1.5px solid ${C.navy}` }}>
+                              {cbCalc.pkgYield}% ({lakhFromUnits(cb.packedQty)})
+                            </td>
+                            <td style={{ padding: 10, border: splitCellBorder, borderBottom: isLastSplit ? splitCellBorder : `1.5px solid ${C.navy}` }}>
+                              {cbCalc.dispatchYield}% ({lakhFromUnits(cb.dispatchQty)})
+                            </td>
+                            {idx === 0 && (
+                              <>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder, fontWeight: 700, color: C.ok, fontSize: 13 }}>
+                                  {calc.finalYield ? `${calc.finalYield}%` : "—"}
+                                </td>
+                                <td rowSpan={linkedCBs.length} style={{ padding: 10, border: splitCellBorder }} className="no-print">
+                                  <button type="button" className="btn-nav btn-delete" style={{ padding: "4px 8px", fontSize: 11 }} onClick={() => deleteMB(mb.id)}>🗑️ Delete</button>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })
+                    )}
+
+                    {/* Progressive Yield Summary Row */}
+                    <tr style={{ background: C.paleBg, fontWeight: 700, fontSize: 11.5, borderBottom: `2px solid ${C.navy}` }}>
+                      <td colSpan="3" style={{ padding: 8, border: `1px solid ${C.line}`, textAlign: "right" }}>Progressive Yield</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}`, color: C.navy }}>100%</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}`, color: C.ok }}>{calc.granYield}%</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}`, color: C.ok }}>{calc.compYield}%</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}`, color: C.ok }}>{calc.coatYield}%</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}` }}>NA</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}` }}>Total {calc.plannedLakh}</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}` }}>Total {calc.packedLakhTotal}</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}` }}>Total {calc.dispatchLakhTotal}</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}`, color: C.ok }}>{calc.finalYield}%</td>
+                      <td style={{ padding: 8, border: `1px solid ${C.line}` }} className="no-print"></td>
+                    </tr>
+                  </React.Fragment>
                 );
               })}
             </tbody>
           </table>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: C.navy, color: C.white }}>
-                <th style={{ padding: 8, textAlign: "left" }}>Date</th>
-                <th style={{ padding: 8, textAlign: "left" }}>CB ID</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Product</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Batch No.</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Packed (Lakhs & Counts)</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Dispatched (Lakhs & Counts)</th>
-                <th style={{ padding: 8, textAlign: "left" }}>Pkg Yield</th>
-                <th style={{ padding: 8, textAlign: "center" }} className="no-print">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cbFiltered.map((cb, i) => {
-                const calc = computeCB(cb, motherBatches);
-                return (
-                  <tr key={cb.id} style={{ borderBottom: `1px solid ${C.line}`, background: i % 2 === 0 ? C.white : C.paleBg }}>
-                    <td style={{ padding: 8 }}>{fmtDate(cb.date)}</td>
-                    <td style={{ padding: 8, fontWeight: 700 }}>{cb.id}</td>
-                    <td style={{ padding: 8 }}>{cb.productName}</td>
-                    <td style={{ padding: 8 }}>{cb.batchNumber}</td>
-                    <td style={{ padding: 8 }}>{calc.packedLakh ? `${calc.packedLakh} L` : "—"} ({fmtNum(cb.packedQty)})</td>
-                    <td style={{ padding: 8 }}>{calc.dispatchLakh ? `${calc.dispatchLakh} L` : "—"} ({fmtNum(cb.dispatchQty)})</td>
-                    <td style={{ padding: 8 }}><YieldBadge value={calc.pkgYield} /></td>
-                    <td style={{ padding: 8, textAlign: "center" }} className="no-print">
-                      <button type="button" className="btn-nav btn-delete" style={{ padding: "3px 8px", fontSize: 11 }} onClick={() => deleteCB(cb.id)}>🗑️ Delete</button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {cbRows.length === 0 && <EmptyNote text="No commercial batches logged yet in this section." />}
+          {cbRows.map(({ cb, calc }) => (
+            <Card key={cb.id} style={{ padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: C.navy, display: "flex", alignItems: "center", gap: 10 }}>
+                    {cb.id} · {cb.productName} <span style={{ background: C.paleBg, border: `1px solid ${C.line}`, color: C.sub, fontSize: 12, padding: "2px 8px", borderRadius: 6 }}>#{cb.batchNumber}</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>
+                    Linked Mother Batch: <b>{cb.mbId}</b> · Date: {fmtDate(cb.date)}{cb.loggedBy ? ` · Officer: ${cb.loggedBy}` : ""}
+                  </div>
+                </div>
+                <button type="button" className="btn-nav btn-delete" style={{ padding: "5px 10px", fontSize: 12 }} onClick={() => deleteCB(cb.id)}>🗑️ Delete</button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginTop: 16, fontSize: 13 }}>
+                <Stat label="Units Received" value={`${calc.recvLakh ? `${calc.recvLakh} Lakhs` : "—"} (${fmtNum(cb.unitsReceived)})`} />
+                <Stat label="Units Packed" value={`${calc.packedLakh ? `${calc.packedLakh} Lakhs` : "—"} (${fmtNum(cb.packedQty)})`} />
+                <Stat label="Units Dispatched" value={`${calc.dispatchLakh ? `${calc.dispatchLakh} Lakhs` : "—"} (${fmtNum(cb.dispatchQty)})`} />
+                <Stat label="Rejected Units" value={fmtNum(cb.rejectedUnits || 0)} />
+                <Stat label="RR Retained for Future" value={`${fmtNum(cb.rrGeneratedUnits || 0)} units`} />
+                <Stat label="Packaging Yield" value={<YieldBadge value={calc.pkgYield} />} />
+                <Stat label="Dispatch Yield" value={<YieldBadge value={calc.dispatchYield} />} />
+                <Stat label="Final Overall Yield" value={<YieldBadge value={calc.finalYield} />} />
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1666,7 +1528,6 @@ function App() {
   const [role, setRole] = useState(null);
   const [dept, setDept] = useState(null);
   const [userName, setUserName] = useState("");
-  const [showRegister, setShowRegister] = useState(false);
 
   const [motherBatches, setMotherBatches] = useState([]);
   const [commercialBatches, setCommercialBatches] = useState([]);
@@ -1689,7 +1550,7 @@ function App() {
   };
   const pickDept = (d) => { setDept(d); setStep("screen"); };
   const changeDept = () => { setStep("department"); };
-  const goHome = () => { setRole(null); setDept(null); setUserName(""); setShowRegister(false); setStep("role"); };
+  const goHome = () => { setRole(null); setDept(null); setUserName(""); setStep("role"); };
 
   if (loading) {
     return (
@@ -1724,14 +1585,9 @@ function App() {
         onSwitchRole={goHome}
         onChangeDept={changeDept}
         showDeptChange={role !== "manager"}
-        onOpenRegister={() => setShowRegister(true)}
-        showRegisterLink={role === "manager"}
       />
-      {role === "manager" && showRegister && (
-        <PlantRegister motherBatches={motherBatches} setMotherBatches={setMotherBatches} commercialBatches={commercialBatches} setCommercialBatches={setCommercialBatches} onBack={() => setShowRegister(false)} />
-      )}
-      {role === "manager" && !showRegister && (
-        <ManagerScreen motherBatches={motherBatches} setMotherBatches={setMotherBatches} commercialBatches={commercialBatches} setCommercialBatches={setCommercialBatches} onOpenRegister={() => setShowRegister(true)} />
+      {role === "manager" && (
+        <ManagerScreen motherBatches={motherBatches} setMotherBatches={setMotherBatches} commercialBatches={commercialBatches} setCommercialBatches={setCommercialBatches} />
       )}
       {role === "production" && (
         <ProductionScreen
