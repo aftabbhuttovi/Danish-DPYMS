@@ -1,0 +1,196 @@
+/* Global resets and design system for DPYMS v2 - Danish Health Care (P) Ltd. */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #F4F7FC;
+  color: #101826;
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+input, select, button, textarea {
+  font-family: inherit;
+}
+
+/* Header & Logo Branding */
+.brand-logo {
+  max-height: 60px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  display: inline-block;
+}
+
+.brand-header-logo {
+  max-height: 80px;
+  max-width: 100%;
+  width: auto;
+  object-fit: contain;
+  display: inline-block;
+}
+
+/* Product Photo Cropping - Ultra Clean & Focused */
+.product-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #DCE4F0;
+  background-color: #FFFFFF;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.product-card-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #DCE4F0;
+  background-color: #FFFFFF;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(14, 42, 94, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.product-card-img:hover {
+  transform: scale(1.04);
+}
+
+/* Universal Action Bar & Navigation Buttons */
+.nav-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  background: #FFFFFF;
+  border: 1px solid #DCE4F0;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(14, 42, 94, 0.04);
+  flex-wrap: wrap;
+}
+
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.btn-nav:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-nav:active {
+  transform: translateY(0);
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #1E7B34 0%, #155B26 100%);
+  color: #FFFFFF;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #2F6FE0 0%, #153E82 100%);
+  color: #FFFFFF;
+}
+
+.btn-update {
+  background: linear-gradient(135deg, #0E2A5E 0%, #081B40 100%);
+  color: #FFFFFF;
+}
+
+.btn-delete {
+  background: #FDE3E3;
+  color: #B00020;
+  border: 1px solid #F8B4B4;
+}
+.btn-delete:hover {
+  background: #B00020;
+  color: #FFFFFF;
+}
+
+.btn-back {
+  background: #E9ECEF;
+  color: #495057;
+  border: 1px solid #CED4DA;
+}
+.btn-back:hover {
+  background: #DEE2E6;
+  color: #212529;
+}
+
+.btn-next {
+  background: linear-gradient(135deg, #5FA8E0 0%, #2F6FE0 100%);
+  color: #FFFFFF;
+}
+
+/* Badges */
+.badge-status {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.badge-pending {
+  background-color: #FFF3D6;
+  color: #9C6500;
+  border: 1px solid #FFE094;
+}
+
+.badge-approved {
+  background-color: #E3F5E6;
+  color: #1E7B34;
+  border: 1px solid #B7E8C2;
+}
+
+.badge-rejected {
+  background-color: #FDE3E3;
+  color: #B00020;
+  border: 1px solid #F8B4B4;
+}
+
+/* Printable GMP Reports */
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .report-container {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}
