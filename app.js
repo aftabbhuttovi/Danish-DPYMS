@@ -32,11 +32,11 @@ const DEFAULT_CAP = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/
 const DEFAULT_ORS = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300"><rect width="300" height="300" rx="20" fill="%230E2A5E"/><rect x="50" y="45" width="200" height="200" rx="12" fill="%23FFFFFF" stroke="%231E7B34" stroke-width="4"/><rect x="65" y="60" width="170" height="40" rx="6" fill="%231E7B34"/><text x="150" y="86" font-family="'Segoe UI', Arial, sans-serif" font-weight="800" font-size="20" fill="%23FFFFFF" text-anchor="middle">DANISH ORS</text><text x="150" y="130" font-family="'Segoe UI', Arial, sans-serif" font-weight="700" font-size="15" fill="%230E2A5E" text-anchor="middle">ORAL REHYDRATION</text><text x="150" y="150" font-family="'Segoe UI', Arial, sans-serif" font-weight="600" font-size="13" fill="%235B6B7F" text-anchor="middle">SALTS (WHO FORMULA)</text><circle cx="150" cy="190" r="22" fill="%235FA8E0" opacity="0.2"/><path d="M150 176 L150 204 M136 190 L164 190" stroke="%231E7B34" stroke-width="4" stroke-linecap="round"/><text x="150" y="275" font-family="'Segoe UI', Arial, sans-serif" font-weight="700" font-size="14" fill="%23FFFFFF" text-anchor="middle">ORS SACHETS</text></svg>`;
 const DEFAULT_OINT = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300"><rect width="300" height="300" rx="20" fill="%23153E82"/><g transform="rotate(-25 150 150)"><rect x="70" y="110" width="160" height="60" rx="8" fill="%23FFFFFF" stroke="%239C6500" stroke-width="3"/><rect x="230" y="120" width="25" height="40" rx="4" fill="%230E2A5E"/><rect x="50" y="115" width="20" height="50" fill="%239C6500"/><text x="140" y="146" font-family="'Segoe UI', Arial, sans-serif" font-weight="800" font-size="16" fill="%230E2A5E" text-anchor="middle">OINTMENT TUBE</text></g><text x="150" y="275" font-family="'Segoe UI', Arial, sans-serif" font-weight="700" font-size="14" fill="%23FFFFFF" text-anchor="middle">OINTMENT</text></svg>`;
 
-const BRAND_LOGO = window.LOGO_B64 || 'assets/danish_logo.jpg';
-const IMG_TAB = window.TAB_B64 || 'assets/tablet_product.jpg';
-const IMG_CAP = window.CAP_B64 || 'assets/capsule_product.jpg';
-const IMG_ORS = window.ORS_B64 || 'assets/ors_product.jpg';
-const IMG_OINT = window.OINT_B64 || 'assets/ointment_product.jpg';
+const BRAND_LOGO = window.LOGO_B64 || 'danish_logo.jpg';
+const IMG_TAB = window.TAB_B64 || 'tablet_product.jpg';
+const IMG_CAP = window.CAP_B64 || 'capsule_product.jpg';
+const IMG_ORS = window.ORS_B64 || 'ors_product.jpg';
+const IMG_OINT = window.OINT_B64 || 'ointment_product.jpg';
 
 // ---------- Pre-loaded Default Product Examples ----------
 const SAMPLE_MOTHER_BATCHES = [
@@ -440,7 +440,35 @@ function fmtNum(n) {
 function BrandHeader({ small }) {
   return (
     <div style={{ textAlign: "center", marginBottom: small ? 20 : 32 }}>
-      <img src={BRAND_LOGO} onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_LOGO; }} alt="Danish Healthcare Logo" className="brand-header-logo" style={{ marginBottom: 12, height: small ? 42 : 54 }} />
+      <img
+        src={BRAND_LOGO}
+        onError={(e) => {
+          const step = parseInt(e.target.dataset.step || "0", 10);
+          if (step === 0) {
+            e.target.dataset.step = "1";
+            e.target.src = "danish_logo.png";
+          } else if (step === 1) {
+            e.target.dataset.step = "2";
+            e.target.src = "assets/danish_logo.jpg";
+          } else {
+            e.target.onerror = null;
+            e.target.src = DEFAULT_LOGO;
+          }
+        }}
+        alt="Danish Healthcare Logo"
+        className="brand-header-logo"
+        style={{
+          marginBottom: 14,
+          maxHeight: small ? 48 : 72,
+          maxWidth: "320px",
+          width: "auto",
+          objectFit: "contain",
+          background: "#FFFFFF",
+          padding: "8px 20px",
+          borderRadius: 12,
+          boxShadow: "0 4px 18px rgba(0,0,0,0.25)"
+        }}
+      />
       <div style={{ color: "rgba(255,255,255,0.9)", fontSize: 12.5, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700 }}>
         DANISH HEALTH CARE (P) LTD. · UJJAIN
       </div>
@@ -540,7 +568,34 @@ function RolePicker({ onPick }) {
 function DepartmentPicker({ onPick, onBack }) {
   return (
     <div style={{ minHeight: "100vh", background: C.paleBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "24px", fontFamily: FONT_BODY }}>
-      <img src={BRAND_LOGO} onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_LOGO; }} alt="Danish Healthcare" style={{ height: 52, marginBottom: 20 }} />
+      <img
+        src={BRAND_LOGO}
+        onError={(e) => {
+          const step = parseInt(e.target.dataset.step || "0", 10);
+          if (step === 0) {
+            e.target.dataset.step = "1";
+            e.target.src = "danish_logo.png";
+          } else if (step === 1) {
+            e.target.dataset.step = "2";
+            e.target.src = "assets/danish_logo.jpg";
+          } else {
+            e.target.onerror = null;
+            e.target.src = DEFAULT_LOGO;
+          }
+        }}
+        alt="Danish Healthcare"
+        style={{
+          maxHeight: 64,
+          maxWidth: "300px",
+          width: "auto",
+          objectFit: "contain",
+          marginBottom: 20,
+          background: "#FFFFFF",
+          padding: "6px 16px",
+          borderRadius: 10,
+          boxShadow: "0 2px 8px rgba(14,42,94,0.08)"
+        }}
+      />
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ fontFamily: FONT_DISPLAY, fontSize: 20, fontWeight: 700, color: C.navy }}>Select Product Line</div>
         <div style={{ fontSize: 12.5, color: C.sub, marginTop: 4 }}>Choose manufacturing section for yield logging</div>
@@ -548,7 +603,30 @@ function DepartmentPicker({ onPick, onBack }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, width: "100%", maxWidth: 480 }}>
         {DEPT_LIST.map((d) => (
           <button key={d.key} onClick={() => onPick(d.key)} style={{ background: C.white, border: `1.5px solid ${C.line}`, borderRadius: 16, padding: "20px 16px", cursor: "pointer", textAlign: "center", boxShadow: "0 4px 14px rgba(14,42,94,0.06)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-            <img src={d.imgSrc} onError={(e) => { e.target.onerror = null; if (d.key === "tablet") e.target.src = DEFAULT_TAB; else if (d.key === "capsule") e.target.src = DEFAULT_CAP; else if (d.key === "ors") e.target.src = DEFAULT_ORS; else if (d.key === "ointment") e.target.src = DEFAULT_OINT; }} alt={d.label} className="product-card-img" />
+            <img
+              src={d.imgSrc}
+              onError={(e) => {
+                const step = parseInt(e.target.dataset.step || "0", 10);
+                if (step === 0) {
+                  e.target.dataset.step = "1";
+                  e.target.src = `${d.key}.jpg`;
+                } else if (step === 1) {
+                  e.target.dataset.step = "2";
+                  e.target.src = `${d.key}_product.png`;
+                } else if (step === 2) {
+                  e.target.dataset.step = "3";
+                  e.target.src = `assets/${d.key}_product.jpg`;
+                } else {
+                  e.target.onerror = null;
+                  if (d.key === "tablet") e.target.src = DEFAULT_TAB;
+                  else if (d.key === "capsule") e.target.src = DEFAULT_CAP;
+                  else if (d.key === "ors") e.target.src = DEFAULT_ORS;
+                  else if (d.key === "ointment") e.target.src = DEFAULT_OINT;
+                }
+              }}
+              alt={d.label}
+              className="product-card-img"
+            />
             <div>
               <div style={{ fontWeight: 700, fontSize: 15, color: C.ink }}>{d.label}</div>
               <div style={{ fontSize: 11.5, color: C.sub, marginTop: 2 }}>{d.unit}</div>
@@ -1575,12 +1653,20 @@ function App() {
     fetchLatestCloudData(false);
   }, [fetchLatestCloudData]);
 
-  // Live Auto-Sync Every 10 Seconds (Syncs data saved on other devices!)
+  // Instant Automatic Hands-Free Multi-Device Cloud Sync (Every 2.5 seconds & on tab focus)
   useEffect(() => {
+    fetchLatestCloudData(false);
     const interval = setInterval(() => {
       fetchLatestCloudData(false);
-    }, 10000);
-    return () => clearInterval(interval);
+    }, 2500);
+
+    const onFocus = () => fetchLatestCloudData(false);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [fetchLatestCloudData]);
 
   const pickRole = (r) => {
