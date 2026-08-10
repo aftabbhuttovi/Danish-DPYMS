@@ -139,52 +139,74 @@ const DEPARTMENTS = {
 };
 const DEPT_LIST = Object.values(DEPARTMENTS);
 
-// ---------- TRIPLE-REDUNDANT GLOBAL CLOUD PERSISTENCE SYSTEM ----------
+// ---------- TRIPLE-REDUNDANT PERMANENT CLOUD PERSISTENCE SYSTEM ----------
 async function loadShared(key, fallback) {
   const cloudKey = key === 'dpyms_mother_batches' ? 'mother_batches' : 'commercial_batches';
-
-  // 1. Primary: Fetch from Global Cloud Database (Multi-device shared database)
-  try {
-    const res = await fetch(`${CLOUD_SYNC_BASE}/${cloudKey}?nocache=${Date.now()}`);
-    if (res.ok) {
-      const cloudData = await res.json();
-      if (Array.isArray(cloudData) && cloudData.length > 0) {
-        try { localStorage.setItem(key, JSON.stringify(cloudData)); } catch (e) {}
-        return cloudData;
-      }
-    }
-  } catch (e) {
-    console.warn("Global Cloud database fetch warning, attempting fallback:", e);
-  }
-
-  // 2. Secondary: Fallback to Supabase Database
-  try {
-    const table = cloudKey;
-    const { data, error } = await supabase.from(table).select('*');
-    if (!error && data && data.length > 0) {
-      const cloudData = data.map(toCamelCase);
-      try { localStorage.setItem(key, JSON.stringify(cloudData)); } catch (e) {}
-      return cloudData;
-    }
-  } catch (e) {}
-
-  // 3. Tertiary: LocalStorage browser cache fallback
+  
+  // 1. Read existing local storage data first
+  let localData = [];
   try {
     const raw = localStorage.getItem(key);
     if (raw) {
-      const localData = JSON.parse(raw);
-      if (Array.isArray(localData) && localData.length > 0) return localData;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) localData = parsed;
     }
   } catch (e) {}
 
-  // 4. Default initial sample data
-  return fallback;
+  let cloudData = [];
+
+  // 2. Fetch from Global Cloud Database
+  try {
+    const res = await fetch(`${CLOUD_SYNC_BASE}/${cloudKey}?nocache=${Date.now()}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (Array.isArray(json) && json.length > 0) {
+        cloudData = json;
+      }
+    }
+  } catch (e) {
+    console.warn("Global Cloud database fetch warning:", e);
+  }
+
+  // 3. Fallback to Supabase Database if cloudData is empty
+  if (cloudData.length === 0) {
+    try {
+      const table = cloudKey;
+      const { data, error } = await supabase.from(table).select('*');
+      if (!error && data && data.length > 0) {
+        cloudData = data.map(toCamelCase);
+      }
+    } catch (e) {}
+  }
+
+  // 4. SMART UNION MERGE (Merges Local + Cloud + Fallback by ID so NO batch is EVER lost!)
+  const itemMap = new Map();
+
+  // Add initial sample fallback items first
+  if (Array.isArray(fallback)) {
+    fallback.forEach(item => itemMap.set(item.id, item));
+  }
+
+  // Overlay local items (preserves user batches saved on this device)
+  localData.forEach(item => itemMap.set(item.id, item));
+
+  // Overlay cloud items (preserves user batches saved from other devices)
+  cloudData.forEach(item => itemMap.set(item.id, item));
+
+  const merged = Array.from(itemMap.values());
+
+  // Lock merged result into localStorage permanently!
+  try {
+    localStorage.setItem(key, JSON.stringify(merged));
+  } catch (e) {}
+
+  return merged;
 }
 
 async function saveShared(key, value) {
   const cloudKey = key === 'dpyms_mother_batches' ? 'mother_batches' : 'commercial_batches';
 
-  // 1. Immediately save to LocalStorage for zero-latency local updates
+  // 1. Immediately save to LocalStorage for zero-latency local lock
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
@@ -226,6 +248,37 @@ async function deleteSharedRow(table, id) {
   try {
     await supabase.from(table).delete().eq('id', id);
   } catch (e) {}
+}
+
+function toCSV(data, headers) {
+  if (!data || !data.length) return '';
+  const headerKeys = headers ? headers.map(h => h.key) : Object.keys(data[0]);
+  const headerLabels = headers ? headers.map(h => h.label) : Object.keys(data[0]);
+
+  const escapeCell = (val) => {
+    if (val === null || val === undefined) return '""';
+    const str = String(val).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const rows = [
+    headerLabels.map(escapeCell).join(','),
+    ...data.map(row => headerKeys.map(k => escapeCell(row[k])).join(','))
+  ];
+
+  return rows.join('\r\n');
+}
+
+function downloadCSV(filename, csvContent) {
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 const round2 = (n) => (isFinite(n) && n !== "" && n !== null ? Math.round(n * 100) / 100 : "");
@@ -1300,23 +1353,71 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
   });
 
   const exportCSVReport = () => {
-    const headers = [
-      { key: "date", label: "Date" },
-      { key: "id", label: "MB ID" },
-      { key: "genericName", label: "Generic Name of Product" },
-      { key: "planned", label: "Planned (Kg & Lacs)" },
-      { key: "granYield", label: "Gran Output %" },
-      { key: "compYield", label: "Comp Output %" },
-      { key: "coatYield", label: "Coating Output %" },
-      { key: "finalYield", label: "Final Yield %" }
-    ];
-    const exportData = mbRows.map(({ mb, calc }) => ({
-      date: mb.date, id: mb.id, genericName: mb.genericName,
-      planned: `${calc.totalBatchKg} kg / ${calc.plannedLakh} lacs`,
-      granYield: `${calc.granYield}%`, compYield: `${calc.compYield}%`, coatYield: `${calc.coatYield}%`,
-      finalYield: `${calc.finalYield}%`
-    }));
-    downloadCSV(`DPYMS_Unified_Plant_Register_${new Date().toISOString().slice(0, 10)}.csv`, toCSV(exportData, headers));
+    let headers, exportData, filename;
+    if (activeTab === "mother") {
+      filename = `DPYMS_Mother_Batches_Register_${new Date().toISOString().slice(0, 10)}.csv`;
+      headers = [
+        { key: "date", label: "Date" },
+        { key: "id", label: "MB ID" },
+        { key: "dept", label: "Department" },
+        { key: "genericName", label: "Generic Name of Product" },
+        { key: "productGroup", label: "Product Group" },
+        { key: "plannedKg", label: "Planned Batch (Kg)" },
+        { key: "plannedLakh", label: "Planned Batch (Lacs)" },
+        { key: "granYield", label: "Granulation Yield %" },
+        { key: "compYield", label: "Compression Yield %" },
+        { key: "coatYield", label: "Coating Yield %" },
+        { key: "finalYield", label: "Final Production Yield %" },
+        { key: "qaStatus", label: "QA Status" },
+        { key: "remarks", label: "Remarks" }
+      ];
+      exportData = mbRows.map(({ mb, calc }) => ({
+        date: mb.date || "",
+        id: mb.id || "",
+        dept: (mb.dept || "").toUpperCase(),
+        genericName: mb.genericName || "",
+        productGroup: mb.productGroup || "",
+        plannedKg: calc.totalBatchKg || "",
+        plannedLakh: calc.plannedLakh || "",
+        granYield: calc.granYield ? `${calc.granYield}%` : "N/A",
+        compYield: calc.compYield ? `${calc.compYield}%` : "N/A",
+        coatYield: calc.coatYield ? `${calc.coatYield}%` : "N/A",
+        finalYield: calc.finalYield ? `${calc.finalYield}%` : "N/A",
+        qaStatus: mb.qaStatus || "Pending",
+        remarks: mb.remarks || ""
+      }));
+    } else {
+      filename = `DPYMS_Commercial_Batches_Register_${new Date().toISOString().slice(0, 10)}.csv`;
+      headers = [
+        { key: "date", label: "Date" },
+        { key: "id", label: "CB ID" },
+        { key: "mbId", label: "Linked MB ID" },
+        { key: "productName", label: "Brand Name" },
+        { key: "batchNumber", label: "Commercial Batch #" },
+        { key: "unitsReceived", label: "Units Received" },
+        { key: "packedQty", label: "Packed Units" },
+        { key: "rrGen", label: "RR Retained Units (Saved)" },
+        { key: "dispatchQty", label: "Dispatch Units" },
+        { key: "rejectedUnits", label: "Rejected Units" },
+        { key: "pkgYield", label: "Packaging Yield %" },
+        { key: "dispatchYield", label: "Dispatch Yield %" }
+      ];
+      exportData = cbRows.map(({ cb, calc }) => ({
+        date: cb.date || "",
+        id: cb.id || "",
+        mbId: cb.mbId || "",
+        productName: cb.productName || "",
+        batchNumber: cb.batchNumber || "",
+        unitsReceived: cb.unitsReceived || "0",
+        packedQty: cb.packedQty || "0",
+        rrGen: calc.rrGen || "0",
+        dispatchQty: cb.dispatchQty || "0",
+        rejectedUnits: cb.rejectedUnits || "0",
+        pkgYield: calc.pkgYield ? `${calc.pkgYield}%` : "N/A",
+        dispatchYield: calc.dispatchYield ? `${calc.dispatchYield}%` : "N/A"
+      }));
+    }
+    downloadCSV(filename, toCSV(exportData, headers));
   };
 
   return (
@@ -1680,8 +1781,65 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.paleBg, fontFamily: FONT_BODY, color: C.sub }}>
-        Loading DPYMS v2 Multi-Device Cloud Data…
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: `linear-gradient(160deg, ${C.navy} 0%, ${C.navy2} 55%, ${C.blue} 100%)`,
+        fontFamily: FONT_BODY,
+        padding: "24px",
+        color: C.white,
+        textAlign: "center"
+      }}>
+        <div style={{
+          position: "relative",
+          width: 90,
+          height: 90,
+          marginBottom: 24,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <div className="loader-pulse-ring" />
+          <img
+            src={BRAND_LOGO}
+            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_LOGO; }}
+            alt="Danish Healthcare"
+            style={{
+              maxHeight: 50,
+              maxWidth: 70,
+              objectFit: "contain",
+              background: "#FFFFFF",
+              padding: "6px 10px",
+              borderRadius: 10,
+              boxShadow: "0 4px 14px rgba(0,0,0,0.3)"
+            }}
+          />
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 800, fontFamily: FONT_DISPLAY, letterSpacing: 1 }}>
+          DANISH HEALTHCARE (P) LTD.
+        </div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginTop: 6, letterSpacing: 1.5, textTransform: "uppercase" }}>
+          Digital Production Yield Management System (DPYMS v2)
+        </div>
+        <div style={{
+          marginTop: 24,
+          padding: "8px 20px",
+          borderRadius: 999,
+          background: "rgba(255,255,255,0.12)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.2)",
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: C.skyBlue,
+          display: "flex",
+          alignItems: "center",
+          gap: 10
+        }}>
+          <span className="spinner-dot" /> Initializing Multi-Device Cloud Persistence Engine…
+        </div>
       </div>
     );
   }
