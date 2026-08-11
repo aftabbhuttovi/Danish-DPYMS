@@ -139,7 +139,7 @@ const DEPARTMENTS = {
 };
 const DEPT_LIST = Object.values(DEPARTMENTS);
 
-// ---------- TRIPLE-REDUNDANT PERMANENT CLOUD PERSISTENCE SYSTEM ----------
+// ---------- DUAL-ENGINE MOBILE-FRIENDLY CLOUD PERSISTENCE HUB ----------
 async function loadShared(key, fallback) {
   const cloudKey = key === 'dpyms_mother_batches' ? 'mother_batches' : 'commercial_batches';
   
@@ -155,42 +155,51 @@ async function loadShared(key, fallback) {
 
   let cloudData = [];
 
-  // 2. Fetch from Global Cloud Database
+  // 2. Query Supabase Direct REST API (100% Mobile Carrier & Safari/Chrome Compatible)
+  try {
+    const table = cloudKey;
+    const res = await fetch(`${supabaseUrl}/rest/v1/${table}?select=*&limit=5000&order=created_at.desc`, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`
+      }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        cloudData = data.map(toCamelCase);
+      }
+    }
+  } catch (e) {
+    console.warn("Supabase Direct REST API fetch warning:", e);
+  }
+
+  // 3. Parallel fetch from KVDB Cloud Relay fallback
   try {
     const res = await fetch(`${CLOUD_SYNC_BASE}/${cloudKey}?nocache=${Date.now()}`);
     if (res.ok) {
       const json = await res.json();
       if (Array.isArray(json) && json.length > 0) {
-        cloudData = json;
+        const kvMap = new Map();
+        cloudData.forEach(item => kvMap.set(item.id, item));
+        json.forEach(item => kvMap.set(item.id, item));
+        cloudData = Array.from(kvMap.values());
       }
     }
-  } catch (e) {
-    console.warn("Global Cloud database fetch warning:", e);
-  }
+  } catch (e) {}
 
-  // 3. Fallback to Supabase Database if cloudData is empty
-  if (cloudData.length === 0) {
-    try {
-      const table = cloudKey;
-      const { data, error } = await supabase.from(table).select('*');
-      if (!error && data && data.length > 0) {
-        cloudData = data.map(toCamelCase);
-      }
-    } catch (e) {}
-  }
-
-  // 4. SMART UNION MERGE (Merges Local + Cloud + Fallback by ID so NO batch is EVER lost!)
+  // 4. SMART UNION MERGE (Merges Local + Supabase + KVDB + Fallback by ID so ALL devices get ALL batches!)
   const itemMap = new Map();
 
-  // Add initial sample fallback items first
+  // Initial sample fallback items
   if (Array.isArray(fallback)) {
     fallback.forEach(item => itemMap.set(item.id, item));
   }
 
-  // Overlay local items (preserves user batches saved on this device)
+  // Overlay local items from this device
   localData.forEach(item => itemMap.set(item.id, item));
 
-  // Overlay cloud items (preserves user batches saved from other devices)
+  // Overlay cloud items from all other devices (laptop, phones, PCs)
   cloudData.forEach(item => itemMap.set(item.id, item));
 
   const merged = Array.from(itemMap.values());
@@ -213,7 +222,25 @@ async function saveShared(key, value) {
     console.error("localStorage write error:", e);
   }
 
-  // 2. Broadcast & Save to Global Multi-Device Cloud Database
+  // 2. Save via Supabase Direct REST API (Works on Mobile 4G/5G + WiFi)
+  try {
+    const table = cloudKey;
+    const snakeCaseRows = value.map(toSnakeCase);
+    await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(snakeCaseRows)
+    });
+  } catch (e) {
+    console.warn("Supabase Direct REST save warning:", e);
+  }
+
+  // 3. Broadcast to KVDB Cloud Sync
   try {
     await fetch(`${CLOUD_SYNC_BASE}/${cloudKey}`, {
       method: 'POST',
@@ -221,15 +248,8 @@ async function saveShared(key, value) {
       body: JSON.stringify(value)
     });
   } catch (e) {
-    console.warn("Global Cloud save warning:", e);
+    console.warn("KVDB Cloud save warning:", e);
   }
-
-  // 3. Backup to Supabase
-  try {
-    const table = cloudKey;
-    const snakeCaseRows = value.map(toSnakeCase);
-    await supabase.from(table).upsert(snakeCaseRows);
-  } catch (e) {}
 
   return { ok: true };
 }
@@ -1469,7 +1489,7 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 22 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 22 }} className="no-print">
         <Card style={{ padding: "16px" }}>
           <Stat label="MOTHER BATCHES" value={totals.batches} />
         </Card>
@@ -1488,7 +1508,7 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
       </div>
 
       {deptFilter === "all" && (
-        <div style={{ marginBottom: 26 }}>
+        <div style={{ marginBottom: 26 }} className="no-print">
           <SectionHeading title="Department Production Summaries (Kg & Lakhs)" small />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
             {byDept.map((d) => (
@@ -1516,7 +1536,15 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
       {/* Unified Platform Overview Table */}
       {activeTab === "mother" ? (
         <div style={{ background: C.white, borderRadius: 16, border: `1px solid ${C.line}`, padding: 24, overflowX: "auto" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${C.navy}`, paddingBottom: 14, marginBottom: 16 }}>
+          <div className="print-header print-only">
+            <img src={BRAND_LOGO} alt="Danish Healthcare" />
+            <div className="print-header-title">
+              <h1>DANISH HEALTH CARE (P) LTD.</h1>
+              <p>INDUSTRIAL AREA, UJJAIN (M.P.) · GMP CERTIFIED MANUFACTURING FACILITY</p>
+              <p>OFFICIAL MOTHER BATCHES PROGRESSIVE YIELD REGISTER — Printed: {new Date().toLocaleDateString("en-IN")}</p>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `2px solid ${C.navy}`, paddingBottom: 14, marginBottom: 16 }} className="no-print">
             <img src={BRAND_LOGO} alt="Danish Healthcare" style={{ height: 44 }} />
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: C.navy, fontFamily: FONT_DISPLAY }}>DANISH HEALTH CARE (P) LTD.</div>
@@ -1684,9 +1712,25 @@ function ManagerScreen({ motherBatches, setMotherBatches, commercialBatches, set
               })}
             </tbody>
           </table>
+
+          {/* Official Signatures for GMP Compliance Printout */}
+          <div className="print-footer print-only">
+            <div className="signature-box">
+              <div className="signature-line" />
+              <div>Production Officer Sign & Date</div>
+            </div>
+            <div className="signature-box">
+              <div className="signature-line" />
+              <div>QA Manager Sign & Date</div>
+            </div>
+            <div className="signature-box">
+              <div className="signature-line" />
+              <div>Plant Head Sign & Date</div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }} className="no-print">
           {cbRows.length === 0 && <EmptyNote text="No commercial batches logged yet in this section." />}
           {cbRows.map(({ cb, calc }) => (
             <Card key={cb.id} style={{ padding: 20 }}>
