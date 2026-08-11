@@ -209,6 +209,11 @@ async function loadShared(key, fallback) {
     localStorage.setItem(key, JSON.stringify(merged));
   } catch (e) {}
 
+  // 5. AUTOMATIC CLOUD PUSH: Broadcast complete merged list back to Cloud DB so all phones/PCs get all 5 batches!
+  if (merged.length > cloudData.length) {
+    saveShared(key, merged);
+  }
+
   return merged;
 }
 
