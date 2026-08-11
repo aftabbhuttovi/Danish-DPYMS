@@ -841,7 +841,7 @@ function FilterChip({ active, onClick, label }) {
 // PRODUCTION SCREEN
 // ============================================================================
 function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches, setCommercialBatches }) {
-  const d = DEPARTMENTS[dept];
+  const d = (dept && DEPARTMENTS[dept]) || { label: "Plant-Wide", unit: "Units", imgSrc: DEFAULT_LOGO };
   const isTablet = dept === "tablet";
   const isCapsule = dept === "capsule";
   const isOrsOintment = dept === "ors" || dept === "ointment";
@@ -1049,7 +1049,7 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
 // QA SCREEN
 // ============================================================================
 function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches }) {
-  const d = DEPARTMENTS[dept];
+  const d = (dept && DEPARTMENTS[dept]) || { label: "Plant-Wide", unit: "Units", imgSrc: DEFAULT_LOGO };
   const [viewAllDepts, setViewAllDepts] = useState(false);
   const deptMBs = viewAllDepts ? motherBatches : motherBatches.filter((m) => m.dept === dept);
 
@@ -1123,8 +1123,8 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
 // PACKAGING SCREEN
 // ============================================================================
 function PackagingScreen({ dept, userName, setUserName, motherBatches, commercialBatches, setCommercialBatches }) {
-  const d = DEPARTMENTS[dept];
-  const deptMBs = motherBatches.filter((m) => m.dept === dept);
+  const d = (dept && DEPARTMENTS[dept]) || { label: "Plant-Wide", unit: "Units", imgSrc: DEFAULT_LOGO };
+  const deptMBs = dept ? motherBatches.filter((m) => m.dept === dept) : motherBatches;
 
   const [mbId, setMbId] = useState(deptMBs[0]?.id || "");
   useEffect(() => { if (!mbId && deptMBs[0]) setMbId(deptMBs[0].id); }, [deptMBs]); // eslint-disable-line
