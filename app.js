@@ -846,6 +846,9 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
   const isCapsule = dept === "capsule";
   const isOrsOintment = dept === "ors" || dept === "ointment";
 
+  const [viewAllDepts, setViewAllDepts] = useState(false);
+  const deptBatches = viewAllDepts ? motherBatches : motherBatches.filter((m) => m.dept === dept);
+
   const blank = {
     id: "", dept, date: new Date().toISOString().slice(0, 10), genericName: "", productGroup: "",
     avgUnitWt: "", plannedLakhUnits: "", plannedBatchWt: "", rrGran: "0", granOutput: "", compOutput: "", compRR: "0",
@@ -1010,7 +1013,11 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
         <Field label="Remarks / Observations"><TextInput value={form.remarks} onChange={set("remarks")} /></Field>
       </Card>
 
-      <SectionHeading title={`Recent ${d.label} Mother Batches`} small />
+      <SectionHeading title={viewAllDepts ? `All Plant Mother Batches (${motherBatches.length})` : `Recent ${d.label} Mother Batches (${deptBatches.length})`} small />
+      <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+        <FilterChip active={!viewAllDepts} onClick={() => setViewAllDepts(false)} label={`Current Section (${d.label})`} />
+        <FilterChip active={viewAllDepts} onClick={() => setViewAllDepts(true)} label={`🌐 View All Plant Lines (${motherBatches.length} Batches)`} />
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {deptBatches.map((mb) => {
           const calc = computeMB(mb, commercialBatches);
@@ -1043,7 +1050,8 @@ function ProductionScreen({ dept, userName, motherBatches, setMotherBatches, com
 // ============================================================================
 function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialBatches }) {
   const d = DEPARTMENTS[dept];
-  const deptMBs = motherBatches.filter((m) => m.dept === dept);
+  const [viewAllDepts, setViewAllDepts] = useState(false);
+  const deptMBs = viewAllDepts ? motherBatches : motherBatches.filter((m) => m.dept === dept);
 
   const [selectedMbId, setSelectedMbId] = useState(deptMBs[0]?.id || "");
   const [qaStatus, setQaStatus] = useState("QA Approved");
@@ -1069,6 +1077,10 @@ function QaScreen({ dept, userName, motherBatches, setMotherBatches, commercialB
       <UniversalActionBar onSave={saveQaApproval} onUpdate={saveQaApproval} />
 
       <Card style={{ padding: 20, marginBottom: 24 }}>
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <FilterChip active={!viewAllDepts} onClick={() => setViewAllDepts(false)} label={`Current Section (${d.label})`} />
+          <FilterChip active={viewAllDepts} onClick={() => setViewAllDepts(true)} label={`🌐 View All Plant Batches (${motherBatches.length})`} />
+        </div>
         <Field label="Select Mother Batch for QA Clearance">
           <SelectInput value={selectedMbId} onChange={(e) => setSelectedMbId(e.target.value)}>
             {deptMBs.map((m) => <option key={m.id} value={m.id}>{m.id} — {m.genericName} (Status: {m.qaStatus || "Pending"})</option>)}
