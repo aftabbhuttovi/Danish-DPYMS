@@ -1941,7 +1941,7 @@ function App() {
     return <DepartmentPicker onPick={pickDept} onBack={goHome} />;
   }
 
-  const deptLabel = dept ? DEPARTMENTS[dept].label : null;
+  const deptLabel = dept && DEPARTMENTS[dept] ? DEPARTMENTS[dept].label : null;
 
   return (
     <div style={{ minHeight: "100vh", background: C.paleBg, fontFamily: FONT_BODY }}>
@@ -1987,5 +1987,60 @@ function App() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error("DPYMS Error Boundary Caught Exception:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#0A192F",
+          color: "#FFFFFF",
+          fontFamily: "Inter, sans-serif",
+          padding: 24,
+          textAlign: "center"
+        }}>
+          <h2 style={{ color: "#F87171" }}>DPYMS Application Recovery</h2>
+          <p style={{ maxWidth: 500, margin: "12px 0 24px", color: "#94A3B8" }}>
+            An unexpected state occurred. Click below to reload session data.
+          </p>
+          <button
+            onClick={() => { window.location.reload(); }}
+            style={{
+              background: "#0E2A5E",
+              color: "#FFF",
+              border: "1px solid #38BDF8",
+              borderRadius: 8,
+              padding: "12px 24px",
+              fontWeight: 700,
+              cursor: "pointer"
+            }}
+          >
+            🔄 Reload Web App
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+root.render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
