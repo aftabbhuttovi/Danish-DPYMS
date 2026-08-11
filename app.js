@@ -717,7 +717,7 @@ function DepartmentPicker({ onPick, onBack }) {
   );
 }
 
-function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, showDeptChange, onManualSync, isSyncing }) {
+function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, showDeptChange, onManualSync, onForcePush, isSyncing }) {
   return (
     <div style={{ background: C.navy, color: C.white, padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", flexWrap: "wrap", gap: 8 }} className="no-print">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -735,6 +735,9 @@ function TopBar({ roleLabel, deptLabel, userName, onSwitchRole, onChangeDept, sh
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button onClick={onForcePush} title="Push all batches on this device to Cloud for other devices" style={{ background: C.okBg, border: `1px solid ${C.ok}`, color: C.ok, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
+          ☁️ Push Data to Cloud
+        </button>
         <button onClick={onManualSync} title="Fetch latest batches saved on other devices" style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.35)", color: C.white, borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontWeight: 700 }}>
           🔄 Sync Cloud Data
         </button>
@@ -1798,6 +1801,25 @@ function App() {
     }
   }, []);
 
+  const forcePushAllData = async () => {
+    setIsSyncing(true);
+    try {
+      const currentMBs = JSON.parse(localStorage.getItem("dpyms_mother_batches") || "[]");
+      const currentCBs = JSON.parse(localStorage.getItem("dpyms_commercial_batches") || "[]");
+      const targetMBs = currentMBs.length ? currentMBs : motherBatches;
+      const targetCBs = currentCBs.length ? currentCBs : commercialBatches;
+      
+      if (targetMBs.length) await saveShared("dpyms_mother_batches", targetMBs);
+      if (targetCBs.length) await saveShared("dpyms_commercial_batches", targetCBs);
+      
+      alert(`Success! Pushed ${targetMBs.length} Mother Batches & ${targetCBs.length} Commercial Batches to Cloud. Now open your Phone and click "Sync Cloud Data"!`);
+    } catch (e) {
+      alert("Push Warning: " + e.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Initial Data Load
   useEffect(() => {
     fetchLatestCloudData(false);
@@ -1919,6 +1941,7 @@ function App() {
         onChangeDept={changeDept}
         showDeptChange={role !== "manager"}
         onManualSync={() => fetchLatestCloudData(true)}
+        onForcePush={forcePushAllData}
         isSyncing={isSyncing}
       />
       {role === "manager" && (
