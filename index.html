@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DPYMS v2 - Danish Health Care (P) Ltd.</title>
+
+  <!-- Global Styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!--
+    CRITICAL LOADING ORDER (Do NOT change):
+    1. React (Cloudflare CDN - works on all mobile networks)
+    2. ReactDOM
+    3. Babel 6.26 - most stable browser JSX compiler, no extra attributes needed
+    4. Supabase - cloud database client
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
+  <!--
+    Using Babel 6.26 (NOT Babel 7) - much simpler, no "data-presets" needed,
+    type="text/babel" is enough, works on 100% of browsers and devices
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js"></script>
+
+  <!-- Supabase client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!--
+    This loading screen shows IMMEDIATELY while app.js compiles.
+    React will replace it automatically once ready.
+  -->
+  <div id="root">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0E2A5E;color:#fff;font-family:'Segoe UI',Arial,sans-serif;text-align:center;padding:24px;">
+      <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.2);border-top:4px solid #5FA8E0;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:24px;"></div>
+      <h1 style="font-size:20px;font-weight:800;letter-spacing:1px;margin:0 0 8px;">DANISH HEALTH CARE (P) LTD.</h1>
+      <p style="font-size:12px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:2px;margin:0 0 24px;">Digital Production Yield Management System</p>
+      <p style="font-size:13px;color:#F59E0B;">⏳ Loading application…</p>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    </div>
+  </div>
+
+  <!-- App.js compiled by Babel 6 - type="text/babel" is all that's needed -->
+  <script type="text/babel" src="app.js"></script>
+
+</body>
+</html>
